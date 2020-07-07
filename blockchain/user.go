@@ -11,8 +11,17 @@ func NewUser() *User {
 	return &user
 }
 
+func LoadUser(purse string) *User {
+	user := User(*ParsePrivate(purse))
+	return &user
+}
+
 func (user *User) Address() string {
 	return StringPublic(user.Public())
+}
+
+func (user *User) Purse() string {
+	return StringPrivate(user.Private())
 }
 
 func (user *User) Private() *rsa.PrivateKey {

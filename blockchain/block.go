@@ -93,3 +93,22 @@ func (block *Block) ProofIsValid() bool {
     }
     return false
 }
+
+func (block *Block) MappingIsValid() bool {
+    for hash := range block.Mapping {
+        if hash == STORAGE_CHAIN {
+            continue
+        }
+        flag := false
+        for _, tx := range block.Transactions {
+            if tx.Sender == hash || tx.Receiver == hash {
+                flag = true
+                break
+            }
+        }
+        if !flag {
+            return false
+        }
+    }
+    return true
+}

@@ -1,6 +1,12 @@
 package blockchain
 
+import (
+    "database/sql"
+)
+
 const (
+    DEBUG          = false
+    // DEBUG          = true
     KEY_SIZE       = 512
     STORAGE_CHAIN  = "STORAGE-CHAIN"
     STORAGE_VALUE  = 100
@@ -10,9 +16,15 @@ const (
     DIFFICULTY     = 15
     TXS_LIMIT      = 6
     TRANSFER_MAX   = 10
+    RAND_BYTES     = 32
+    DB_FILENAME    = "blockchain.db"
 )
 
-type BlockChain []Block
+type BlockChain struct {
+    Index uint64
+    DB *sql.DB
+}
+// type BlockChain []Block
 
 type Block struct {
     Nonce        uint64

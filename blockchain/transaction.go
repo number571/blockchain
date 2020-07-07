@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+    "fmt"
     "bytes"
     "errors"
     "crypto/rsa"
@@ -8,9 +9,9 @@ import (
 
 func (block *Block) NewTransaction(user *User, to string, value uint64) *Transaction {
     tx := &Transaction{
-        RandBytes: GenerateRandomBytes(32),
+        RandBytes: GenerateRandomBytes(RAND_BYTES),
         PrevBlock: block.PrevHash,
-        Sender: StringPublic(user.Public()),
+        Sender: user.Address(),
         Receiver: to,
         Value: value,
     }
@@ -24,6 +25,9 @@ func (block *Block) NewTransaction(user *User, to string, value uint64) *Transac
 
 func (block *Block) AddTransaction(chain *BlockChain, tx *Transaction) error {
     if len(block.Transactions) == TXS_LIMIT && tx.Sender != STORAGE_CHAIN {
+        if DEBUG {
+            fmt.Println("(AddTransaction) len tx = limit")
+        }
         return errors.New("len tx = limit")
     }
     balanceInChain := chain.Balance(tx.Sender)
@@ -32,9 +36,15 @@ func (block *Block) AddTransaction(chain *BlockChain, tx *Transaction) error {
         balanceInChain = value
     }
     if tx.Value > TRANSFER_MAX && tx.ToStorage != STORAGE_REWARD {
+        if DEBUG {
+            fmt.Println("(AddTransaction) storage reward pass")
+        }
         return errors.New("storage reward pass")
     }
     if balanceInBlock > balanceInChain {
+        if DEBUG {
+            fmt.Println("(AddTransaction) insufficient funds")
+        }
         return errors.New("insufficient funds")
     }
     block.Mapping[tx.Sender] = balanceInChain - balanceInBlock

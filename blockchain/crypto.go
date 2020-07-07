@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"bytes"
 	"crypto"
 	"math"
@@ -69,8 +70,14 @@ func ProofOfWork(blockHash []byte, difficulty uint8) uint64 {
 			},
 			[]byte{},
 		))
+		if DEBUG {
+			fmt.Printf("\r%s", Base64Encode(hash))
+		}
 		intHash.SetBytes(hash)
 		if intHash.Cmp(Target) == -1 {
+			if DEBUG {
+				fmt.Println()
+			}
 			break
 		}
 		nonce++
@@ -110,6 +117,20 @@ func StringPublic(pub *rsa.PublicKey) string {
 // Translate public key as string to *rsa.PublicKey.
 func ParsePublic(pubData string) *rsa.PublicKey {
 	pub, err := x509.ParsePKCS1PublicKey(Base64Decode(pubData))
+	if err != nil {
+		return nil
+	}
+	return pub
+}
+
+// Translate public key as *rsa.PublicKey to string.
+func StringPrivate(priv *rsa.PrivateKey) string {
+	return Base64Encode(x509.MarshalPKCS1PrivateKey(priv))
+}
+
+// Translate public key as string to *rsa.PublicKey.
+func ParsePrivate(privData string) *rsa.PrivateKey {
+	pub, err := x509.ParsePKCS1PrivateKey(Base64Decode(privData))
 	if err != nil {
 		return nil
 	}
