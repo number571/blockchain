@@ -1,6 +1,9 @@
-.PHONY: default build run
-default: build run
-build: main.go
-	go build main.go
-run: main
-	./main
+.PHONY: default build node client
+default: build
+build: node.go client.go serve.go
+	go build -o node node.go serve.go
+	go build -o client client.go
+node: node
+	./node
+client: client
+	./client

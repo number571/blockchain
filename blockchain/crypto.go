@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto"
 	"math"
+	mrand"math/rand"
 	"math/big"
 	"crypto/x509"
 	"crypto/rsa"
@@ -58,7 +59,7 @@ func ProofOfWork(blockHash []byte, difficulty uint8) uint64 {
 	var (
 		Target  = big.NewInt(1)
 		intHash = big.NewInt(1)
-		nonce   uint64
+		nonce   = uint64(mrand.Intn(math.MaxInt32))
 		hash    []byte
 	)
 	Target.Lsh(Target, 256-uint(difficulty))
@@ -71,7 +72,7 @@ func ProofOfWork(blockHash []byte, difficulty uint8) uint64 {
 			[]byte{},
 		))
 		if DEBUG {
-			fmt.Printf("\r%s", Base64Encode(hash))
+			fmt.Printf("\rMining: %s", Base64Encode(hash))
 		}
 		intHash.SetBytes(hash)
 		if intHash.Cmp(Target) == -1 {

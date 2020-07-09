@@ -1,16 +1,15 @@
 package blockchain
 
 import (
-    "fmt"
     "bytes"
     "errors"
     "crypto/rsa"
 )
 
-func (block *Block) NewTransaction(user *User, to string, value uint64) *Transaction {
+func NewTransaction(user *User, lasthash []byte, to string, value uint64) *Transaction {
     tx := &Transaction{
         RandBytes: GenerateRandomBytes(RAND_BYTES),
-        PrevBlock: block.PrevHash,
+        PrevBlock: lasthash,
         Sender: user.Address(),
         Receiver: to,
         Value: value,
@@ -18,16 +17,13 @@ func (block *Block) NewTransaction(user *User, to string, value uint64) *Transac
     if value > TRANSFER_MAX {
         tx.ToStorage = STORAGE_REWARD
     }
-    tx.CurrHash  = tx.Hash()
-    tx.Signature = tx.Sign(user.Private())
+    tx.CurrHash  = tx.hash()
+    tx.Signature = tx.sign(user.Private())
     return tx
 }
 
 func (block *Block) AddTransaction(chain *BlockChain, tx *Transaction) error {
     if len(block.Transactions) == TXS_LIMIT && tx.Sender != STORAGE_CHAIN {
-        if DEBUG {
-            fmt.Println("(AddTransaction) len tx = limit")
-        }
         return errors.New("len tx = limit")
     }
     balanceInChain := chain.Balance(tx.Sender)
@@ -36,15 +32,9 @@ func (block *Block) AddTransaction(chain *BlockChain, tx *Transaction) error {
         balanceInChain = value
     }
     if tx.Value > TRANSFER_MAX && tx.ToStorage != STORAGE_REWARD {
-        if DEBUG {
-            fmt.Println("(AddTransaction) storage reward pass")
-        }
         return errors.New("storage reward pass")
     }
     if balanceInBlock > balanceInChain {
-        if DEBUG {
-            fmt.Println("(AddTransaction) insufficient funds")
-        }
         return errors.New("insufficient funds")
     }
     block.Mapping[tx.Sender] = balanceInChain - balanceInBlock
@@ -62,7 +52,7 @@ func (chain *BlockChain) addBalance(block *Block, receiver string, value uint64)
     block.Mapping[receiver] = balanceInChain + value
 }
 
-func (tx *Transaction) Hash() []byte {
+func (tx *Transaction) hash() []byte {
     return HashSum(bytes.Join(
         [][]byte{
             tx.RandBytes,
@@ -76,14 +66,14 @@ func (tx *Transaction) Hash() []byte {
     ))
 }
 
-func (tx *Transaction) Sign(priv *rsa.PrivateKey) []byte {
+func (tx *Transaction) sign(priv *rsa.PrivateKey) []byte {
     return Sign(priv, tx.CurrHash)
 }
 
-func (tx *Transaction) HashIsValid() bool {
-    return bytes.Equal(tx.Hash(), tx.CurrHash)
+func (tx *Transaction) hashIsValid() bool {
+    return bytes.Equal(tx.hash(), tx.CurrHash)
 }
 
-func (tx *Transaction) SignIsValid() bool {
+func (tx *Transaction) signIsValid() bool {
     return Verify(ParsePublic(tx.Sender), tx.CurrHash, tx.Signature) == nil
 }

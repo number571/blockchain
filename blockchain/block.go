@@ -16,14 +16,7 @@ func NewBlock(miner string, prevHash []byte) *Block {
     }
 }
 
-func (block *Block) IsGenesis() bool {
-    if bytes.Equal(block.CurrHash, []byte(GENESIS_BLOCK)) {
-        return true
-    }
-    return false
-}
-
-func (block *Block) Hash() []byte {
+func (block *Block) hash() []byte {
     var tempHash []byte
     for _, tx := range block.Transactions {
         tempHash = HashSum(bytes.Join(
@@ -60,23 +53,23 @@ func (block *Block) Hash() []byte {
     ))
 }
 
-func (block *Block) Sign(priv *rsa.PrivateKey) []byte {
+func (block *Block) sign(priv *rsa.PrivateKey) []byte {
     return Sign(priv, block.CurrHash)
 }
 
-func (block *Block) Proof() uint64 {
+func (block *Block) proof() uint64 {
     return ProofOfWork(block.CurrHash, block.Difficulty)
 }
 
-func (block *Block) HashIsValid() bool {
-    return bytes.Equal(block.Hash(), block.CurrHash)
+func (block *Block) hashIsValid() bool {
+    return bytes.Equal(block.hash(), block.CurrHash)
 }
 
-func (block *Block) SignIsValid() bool {
+func (block *Block) signIsValid() bool {
     return Verify(ParsePublic(block.Miner), block.CurrHash, block.Signature) == nil
 }
 
-func (block *Block) ProofIsValid() bool {
+func (block *Block) proofIsValid() bool {
     intHash := big.NewInt(1)
     Target  := big.NewInt(1)
     hash := HashSum(bytes.Join(
@@ -94,7 +87,7 @@ func (block *Block) ProofIsValid() bool {
     return false
 }
 
-func (block *Block) MappingIsValid() bool {
+func (block *Block) mappingIsValid() bool {
     for hash := range block.Mapping {
         if hash == STORAGE_CHAIN {
             continue

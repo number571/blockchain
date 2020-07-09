@@ -1,12 +1,18 @@
 package blockchain
 
 import (
+    "time"
+    "math/rand"
     "database/sql"
 )
 
+func init() {
+    rand.Seed(time.Now().UnixNano())
+}
+
 const (
-    DEBUG          = false
-    // DEBUG          = true
+    // DEBUG          = false
+    DEBUG          = true
     KEY_SIZE       = 512
     STORAGE_CHAIN  = "STORAGE-CHAIN"
     STORAGE_VALUE  = 100
@@ -17,14 +23,12 @@ const (
     TXS_LIMIT      = 6
     TRANSFER_MAX   = 10
     RAND_BYTES     = 32
-    DB_FILENAME    = "blockchain.db"
 )
 
 type BlockChain struct {
     Index uint64
     DB *sql.DB
 }
-// type BlockChain []Block
 
 type Block struct {
     Nonce        uint64

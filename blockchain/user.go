@@ -4,16 +4,24 @@ import (
 	"crypto/rsa"
 )
 
-type User rsa.PrivateKey
+type User struct {
+	PrivateKey *rsa.PrivateKey
+}
 
 func NewUser() *User {
-	user := User(*GeneratePrivate(KEY_SIZE))
-	return &user
+	return &User{
+		PrivateKey: GeneratePrivate(KEY_SIZE),
+	}
 }
 
 func LoadUser(purse string) *User {
-	user := User(*ParsePrivate(purse))
-	return &user
+	priv := ParsePrivate(purse)
+	if priv == nil {
+		return nil
+	}
+	return &User{
+		PrivateKey: priv,
+	}
 }
 
 func (user *User) Address() string {
@@ -25,10 +33,9 @@ func (user *User) Purse() string {
 }
 
 func (user *User) Private() *rsa.PrivateKey {
-	priv := rsa.PrivateKey(*user)
-	return &priv
+	return user.PrivateKey
 }
 
 func (user *User) Public() *rsa.PublicKey {
-	return &user.PublicKey
+	return &(user.PrivateKey).PublicKey
 }
