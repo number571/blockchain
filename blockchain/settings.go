@@ -11,6 +11,16 @@ func init() {
 }
 
 const (
+    CREATE_TABLE = `
+CREATE TABLE BlockChain (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Hash VARCHAR(44) UNIQUE,
+    Block TEXT
+);
+`
+)
+
+const (
     // DEBUG          = false
     DEBUG          = true
     KEY_SIZE       = 512
@@ -19,14 +29,15 @@ const (
     STORAGE_REWARD = 1
     GENESIS_BLOCK  = "GENESIS-BLOCK"
     GENESIS_REWARD = 100
-    DIFFICULTY     = 15
-    TXS_LIMIT      = 6
-    TRANSFER_MAX   = 10
+    DIFFICULTY     = 20 // 15
+    TXS_LIMIT      = 2 // 6
+    TIME_SESSION   = 1 * time.Minute// minutes
+    START_PERCENT  = 10
     RAND_BYTES     = 32
 )
 
 type BlockChain struct {
-    Index uint64
+    index uint64
     DB *sql.DB
 }
 
@@ -39,6 +50,7 @@ type Block struct {
     Mapping      map[string]uint64
     Miner        string // Hashname
     Signature    []byte // Miner sign
+    TimeStamp    string // time.Now().Format(time.RFC850)
 }
 
 type Transaction struct {
@@ -50,4 +62,5 @@ type Transaction struct {
     ToStorage uint64
     CurrHash  []byte
     Signature []byte 
+    // TimeStamp string
 }

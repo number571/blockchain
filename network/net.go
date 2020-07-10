@@ -9,7 +9,11 @@ type Listener net.Listener
 type Conn net.Conn
 
 func Listen(address string, handle func(Conn, *Package)) Listener {
-	listener, err := net.Listen("tcp", address)
+	splited := strings.Split(address, ":")
+	if len(splited) != 2 {
+		return nil
+	}
+	listener, err := net.Listen("tcp", "0.0.0.0:" + splited[1])
 	if err != nil {
 		return nil
 	}

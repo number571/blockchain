@@ -14,7 +14,7 @@ func NewTransaction(user *User, lasthash []byte, to string, value uint64) *Trans
         Receiver: to,
         Value: value,
     }
-    if value > TRANSFER_MAX {
+    if value > START_PERCENT {
         tx.ToStorage = STORAGE_REWARD
     }
     tx.CurrHash  = tx.hash()
@@ -31,7 +31,7 @@ func (block *Block) AddTransaction(chain *BlockChain, tx *Transaction) error {
     if value, ok := block.Mapping[tx.Sender]; ok {
         balanceInChain = value
     }
-    if tx.Value > TRANSFER_MAX && tx.ToStorage != STORAGE_REWARD {
+    if tx.Value > START_PERCENT && tx.ToStorage != STORAGE_REWARD {
         return errors.New("storage reward pass")
     }
     if balanceInBlock > balanceInChain {

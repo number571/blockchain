@@ -12,62 +12,59 @@ import (
 	bc "./blockchain"
 )
 
-var (
-	Addresses []string
-	User  *bc.User
-)
-
-const (
-	OPT_BLOCKCHAIN  = "[GET-BLOCKCHAIN]"
-	OPT_LASTHASH    = "[GET-LASTHASH]"
-	OPT_BALANCE     = "[GET-BALANCE]"
-	OPT_TRANSACTION = "[ADD-TRANSACTION]"
-)
-
 func init() {
 	if len(os.Args) < 2 {
 		fmt.Println("failed: len(os.Args) < 2\n")
 		os.Exit(1)
 	}
 	var (
-		addrExist  = false
-		userExist  = false
+		addrStr     = ""
+		userNewStr  = ""
+		userLoadStr = ""
+	)
+	var (
+		addrExist     = false
+		userNewExist  = false
+		userLoadExist = false
 	)
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
 		switch {
-		case strings.HasPrefix(arg, "-newuser:"):
-			arg = strings.Replace(arg, "-newuser:", "", 1)
-			User = userNew(arg)
-			if User == nil {
-				fmt.Println("failed: generate user\n")
-				os.Exit(1)
-			}
-			userExist = true
-		case strings.HasPrefix(arg, "-loaduser:"):
-			arg = strings.Replace(arg, "-loaduser:", "", 1)
-			User = userLoad(arg)
-			if User == nil {
-				fmt.Println("failed: load user\n")
-				os.Exit(1)
-			}
-			userExist = true
 		case strings.HasPrefix(arg, "-loadaddr:"):
-			arg = strings.Replace(arg, "-loadaddr:", "", 1)
-			err := json.Unmarshal([]byte(readFile(arg)), &Addresses)
-			if err != nil {
-				fmt.Println("failed: load addresses\n")
-				os.Exit(1)
-			}
-			if len(Addresses) == 0 {
-				fmt.Println("failed: len(Addresses) == 0\n")
-				os.Exit(1)
-			}
+			addrStr = strings.Replace(arg, "-loadaddr:", "", 1)
 			addrExist = true
+		case strings.HasPrefix(arg, "-newuser:"):
+			userNewStr = strings.Replace(arg, "-newuser:", "", 1)
+			userNewExist = true
+		case strings.HasPrefix(arg, "-loaduser:"):
+			userLoadStr = strings.Replace(arg, "-loaduser:", "", 1)
+			userLoadExist = true
 		}
 	}
-	if !userExist || !addrExist {
-		fmt.Println("failed: !userExist || !addrExist\n")
+
+	err := json.Unmarshal([]byte(readFile(addrStr)), &Addresses)
+	if err != nil {
+		fmt.Println("failed: load addresses\n")
+		os.Exit(1)
+	}
+	if len(Addresses) == 0 {
+		fmt.Println("failed: len(Addresses) == 0\n")
+		os.Exit(1)
+	}
+
+	if !(userNewExist || userLoadExist) || !addrExist {
+		fmt.Println("failed: !(userNewExist || userLoadExist) || !addrExist\n")
+		os.Exit(1)
+	}
+
+	if userNewExist {
+		User = userNew(userNewStr)
+	}
+	if userLoadExist {
+		User = userLoad(userLoadStr)
+	}
+	if User == nil {
+		fmt.Println("failed: load user\n")
 		os.Exit(1)
 	}
 }
@@ -113,7 +110,7 @@ func handleClient() {
 func chainPrint() {
 	for i := 0; ; i++ {
 		res := nt.Send(Addresses[0], &nt.Package{
-			Option: OPT_BLOCKCHAIN,
+			Option: GET_CHAIN,
 			Data: fmt.Sprintf("%d", i),
 		})
 		if res.Data == "" {
@@ -130,7 +127,7 @@ func chainTX(splited []string) {
 		return
 	}
 	res := nt.Send(Addresses[0], &nt.Package{
-		Option: OPT_LASTHASH,
+		Option: GET_LASTHASH,
 	})
 	num, err := strconv.Atoi(splited[2])
 	if err != nil {
@@ -140,12 +137,20 @@ func chainTX(splited []string) {
 	tx := bc.NewTransaction(User, bc.Base64Decode(res.Data), splited[1], uint64(num))
 	sertx := bc.SerializeTX(tx)
 	for _, addr := range Addresses {
-		nt.Send(addr, &nt.Package{
-			Option: OPT_TRANSACTION,
+		res := nt.Send(addr, &nt.Package{
+			Option: ADD_TRANSACTION,
 			Data: sertx,
 		})
+		if res == nil {
+			continue
+		}
+		if res.Data == "ok" {
+			fmt.Printf("success: (%s)\n", addr)
+		} else {
+			fmt.Printf("fail: (%s)\n", addr)
+		}
 	}
-	fmt.Println("success: transaction sent\n")
+	fmt.Println()
 }
 
 func chainBalance(splited []string) {
@@ -154,7 +159,7 @@ func chainBalance(splited []string) {
 		return
 	}
 	res := nt.Send(Addresses[0], &nt.Package{
-		Option: OPT_BALANCE,
+		Option: GET_BALANCE,
 		Data: splited[1],
 	})
 	fmt.Println("Balance:", res.Data, "coins\n")
@@ -166,7 +171,7 @@ func userBalance() {
 		return
 	}
 	res := nt.Send(Addresses[0], &nt.Package{
-		Option: OPT_BALANCE,
+		Option: GET_BALANCE,
 		Data: User.Address(),
 	})
 	fmt.Println("Balance:", res.Data, "coins\n")

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"io/ioutil"
+	"encoding/json"
 	nt "./network"
 	bc "./blockchain"
 )
@@ -15,61 +16,104 @@ func init() {
 		os.Exit(1)
 	}
 	var (
-		addrExist  = false
-		userExist  = false
-		chainExist = false
+		serveStr     = ""
+		addrStr      = ""
+		userNewStr   = ""
+		userLoadStr  = ""
+		chainNewStr  = ""
+		chainLoadStr = ""
+	)
+	var (
+		serveExist     = false
+		addrExist      = false
+		userNewExist   = false
+		userLoadExist  = false
+		chainNewExist  = false
+		chainLoadExist = false
 	)
 	for i := 1; i < len(os.Args); i++ {
 		arg := os.Args[i]
 		switch {
-		case strings.HasPrefix(arg, "-address:"):
-			Address = strings.Replace(arg, "-address:", "", 1)
+		case strings.HasPrefix(arg, "-serve:"):
+			serveStr = strings.Replace(arg, "-serve:", "", 1)
+			serveExist = true
+		case strings.HasPrefix(arg, "-loadaddr:"):
+			addrStr = strings.Replace(arg, "-loadaddr:", "", 1)
 			addrExist = true
 		case strings.HasPrefix(arg, "-newuser:"):
-			arg = strings.Replace(arg, "-newuser:", "", 1)
-			User = userNew(arg)
-			if User == nil {
-				fmt.Println("failed: generate user\n")
-				os.Exit(1)
-			}
-			userExist = true
+			userNewStr = strings.Replace(arg, "-newuser:", "", 1)
+			userNewExist = true
 		case strings.HasPrefix(arg, "-loaduser:"):
-			arg = strings.Replace(arg, "-loaduser:", "", 1)
-			User = userLoad(arg)
-			if User == nil {
-				fmt.Println("failed: load user\n")
-				os.Exit(1)
-			}
-			userExist = true
+			userLoadStr = strings.Replace(arg, "-loaduser:", "", 1)
+			userLoadExist = true
 		case strings.HasPrefix(arg, "-newchain:"):
-			arg = strings.Replace(arg, "-newchain:", "", 1)
-			Chain = chainNew(arg)
-			if Chain == nil {
-				fmt.Println("failed: genesis block\n")
-				os.Exit(1)
-			}
-			chainExist = true
+			chainNewStr = strings.Replace(arg, "-newchain:", "", 1)
+			chainNewExist = true
 		case strings.HasPrefix(arg, "-loadchain:"):
-			arg = strings.Replace(arg, "-loadchain:", "", 1)
-			Chain = chainLoad(arg)
-			if Chain == nil {
-				fmt.Println("failed: load chain\n")
-				os.Exit(1)
-			}
-			chainExist = true
+			chainLoadStr = strings.Replace(arg, "-loadchain:", "", 1)
+			chainLoadExist = true
 		}
 	}
-	if !userExist || !chainExist || !addrExist {
-		fmt.Println("failed: !userExist || !chainExist || !addrExist\n")
+
+	if !(userNewExist || userLoadExist) || !(chainNewExist || chainLoadExist) || !serveExist || !addrExist {
+		fmt.Println("failed: !(userNewExist || userLoadExist) || !(chainNewExist || chainLoadExist) || !serveExist || !addrExist\n")
 		os.Exit(1)
 	}
+
+	Serve = serveStr
+
+	var addresses []string
+	err := json.Unmarshal([]byte(readFile(addrStr)), &addresses)
+	if err != nil {
+		fmt.Println("failed: load addresses\n")
+		os.Exit(1)
+	}
+
+	var mapaddr = make(map[string]bool)
+	for _, addr := range addresses {
+		if addr == Serve {
+			continue
+		}
+		if _, ok := mapaddr[addr]; ok {
+			continue
+		}
+		mapaddr[addr] = true
+		Addresses = append(Addresses, addr)
+	}
+
+	if userNewExist {
+		User = userNew(userNewStr)
+	}
+	if userLoadExist {
+		User = userLoad(userLoadStr)
+	}
+	if User == nil {
+		fmt.Println("failed: load user\n")
+		os.Exit(1)
+	}
+
+	if chainNewExist {
+		Filename = chainNewStr
+		Chain = chainNew(chainNewStr)
+	}
+	if chainLoadExist {
+		Filename = chainLoadStr
+		Chain = chainLoad(chainLoadStr)
+	}
+	if Chain == nil {
+		fmt.Println("failed: load chain\n")
+		os.Exit(1)
+	}
+
 	Block = bc.NewBlock(User.Address(), Chain.LastHash())
+	// работа с адресами
 }
 
 func main() {
-	nt.Listen(Address, handleServer)
+	nt.Listen(Serve, handleServer)
 	for {
 		fmt.Scanln()
+		Chain.PrintChain()
 	}
 }
 
