@@ -126,26 +126,28 @@ func chainTX(splited []string) {
 		fmt.Println("failed: len(splited) != 3\n")
 		return
 	}
-	res := nt.Send(Addresses[0], &nt.Package{
-		Option: GET_LASTHASH,
-	})
 	num, err := strconv.Atoi(splited[2])
 	if err != nil {
 		fmt.Println("failed: strconv.Atoi(num)\n")
 		return
 	}
-	tx := bc.NewTransaction(User, bc.Base64Decode(res.Data), splited[1], uint64(num))
-	sertx := bc.SerializeTX(tx)
 	for _, addr := range Addresses {
 		res := nt.Send(addr, &nt.Package{
+			Option: GET_LASTHASH,
+		})
+		if res == nil {
+			continue
+		}
+		tx := bc.NewTransaction(User, bc.Base64Decode(res.Data), splited[1], uint64(num))
+		res = nt.Send(addr, &nt.Package{
 			Option: ADD_TRANSACTION,
-			Data: sertx,
+			Data: bc.SerializeTX(tx),
 		})
 		if res == nil {
 			continue
 		}
 		if res.Data == "ok" {
-			fmt.Printf("success: (%s)\n", addr)
+			fmt.Printf("ok: (%s)\n", addr)
 		} else {
 			fmt.Printf("fail: (%s)\n", addr)
 		}
@@ -155,7 +157,7 @@ func chainTX(splited []string) {
 
 func chainBalance(splited []string) {
 	if len(splited) != 2 {
-		fmt.Println("failed: len(splited) != 2\n")
+		fmt.Println("fail: len(splited) != 2\n")
 		return
 	}
 	res := nt.Send(Addresses[0], &nt.Package{
@@ -167,19 +169,22 @@ func chainBalance(splited []string) {
 
 func userBalance() {
 	if User == nil {
-		fmt.Println("failed: user == nil\n")
+		fmt.Println("fail: user == nil\n")
 		return
 	}
-	res := nt.Send(Addresses[0], &nt.Package{
-		Option: GET_BALANCE,
-		Data: User.Address(),
-	})
-	fmt.Println("Balance:", res.Data, "coins\n")
+	for _, addr := range Addresses {
+		res := nt.Send(addr, &nt.Package{
+			Option: GET_BALANCE,
+			Data: User.Address(),
+		})
+		fmt.Printf("Balance (%s): %s coins\n", addr, res.Data)
+	}
+	fmt.Println()
 }
 
 func userAddress() {
 	if User == nil {
-		fmt.Println("failed: user == nil\n")
+		fmt.Println("fail: user == nil\n")
 		return
 	}
 	fmt.Println("Address:", User.Address(), "\n")
@@ -187,7 +192,7 @@ func userAddress() {
 
 func userPurse() {
 	if User == nil {
-		fmt.Println("failed: user == nil\n")
+		fmt.Println("fail: user == nil\n")
 		return
 	}
 	fmt.Println("Purse:", User.Purse(), "\n")

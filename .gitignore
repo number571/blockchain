@@ -1,4 +1,6 @@
 node
 client
-node.key
-chain.db
+node1.key
+node2.key
+chain1.db
+chain2.db
