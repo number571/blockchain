@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-    "time"
     "sort"
     "bytes"
     "math/big"
@@ -106,28 +105,4 @@ func (block *Block) mappingIsValid() bool {
         }
     }
     return true
-}
-
-func (chain *BlockChain) timeIsValid(block *Block, index uint64) bool {
-    btime, err := time.Parse(time.RFC3339, block.TimeStamp)
-    if err != nil {
-        return false
-    }
-
-    var sblock string
-    row := chain.DB.QueryRow("SELECT Block FROM BlockChain WHERE Hash=$1", Base64Encode(block.PrevHash))
-    row.Scan(&sblock)
-
-    lblock := DeserializeBlock(sblock)
-    if lblock == nil {
-        return false
-    }
-
-    ltime, err := time.Parse(time.RFC3339, lblock.TimeStamp)
-    if err != nil {
-        return false
-    }
-
-    result := btime.Sub(ltime)
-    return result >= TIME_SESSION
 }

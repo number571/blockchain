@@ -31,7 +31,7 @@ const (
     GENESIS_REWARD = 100
     DIFFICULTY     = 20 // 15
     TXS_LIMIT      = 2 // 6
-    TIME_SESSION   = 1 * time.Minute// minutes
+    TIME_SESSION   = 1 * time.Minute // minutes
     START_PERCENT  = 10
     RAND_BYTES     = 32
 )

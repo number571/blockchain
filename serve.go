@@ -9,6 +9,8 @@ import (
     "strings"
     "strconv"
     "encoding/hex"
+    "database/sql"
+    _ "github.com/mattn/go-sqlite3"
     bc "./blockchain"
     nt "./network" 
 )
@@ -27,10 +29,10 @@ func getSize(pack *nt.Package) string {
 }
 
 func addBlock(pack *nt.Package) string {
-    println(111)
+    // println(111)
     splited := strings.Split(pack.Data, SEPARATOR)
     if len(splited) != 3 {
-        println(222)
+        // println(222)
         return "fail"
     }
     block := bc.DeserializeBlock(splited[2])
@@ -38,20 +40,20 @@ func addBlock(pack *nt.Package) string {
         currSize := Chain.Size()
         num, err := strconv.Atoi(splited[1])
         if err != nil {
-            println(333)
+            // println(333)
             return "fail"
         }
         if currSize < uint64(num) {
             return compareChains(splited[0], uint64(num))
         }
-        println(444)
+        // println(444)
         return "fail"
     }
 
     Chain.AddBlock(block)
     Block = bc.NewBlock(User.Address(), Chain.LastHash())
 
-    println(555)
+    // println(555)
     return "ok"
 }
 
@@ -59,7 +61,7 @@ func compareChains(address string, num uint64) string {
     filename := "temp_" + hex.EncodeToString(bc.GenerateRandomBytes(8))
     file, err := os.Create(filename)
     if err != nil {
-        println(111666)
+        // println(666)
         return "fail"
     }
     file.Close()
@@ -72,21 +74,30 @@ func compareChains(address string, num uint64) string {
         Data: fmt.Sprintf("%d", 0),
     })
     if res == nil {
-        println(777)
+        // println(777)
         return "fail"
     }
 
-    block := bc.DeserializeBlock(res.Data)
-    if block == nil {
-        println(888)
+    genesis := bc.DeserializeBlock(res.Data)
+    if genesis == nil {
+        // println(888)
         return "fail"
     }
 
-    if bc.NewChain(filename, block.Miner) != nil {
-        println(999)
+    db, err := sql.Open("sqlite3", filename)
+    if err != nil {
+        // println(999)
         return "fail"
     }
-    chain := bc.LoadChain(filename)
+    defer db.Close()
+
+    _, err = db.Exec(bc.CREATE_TABLE)
+    chain := &bc.BlockChain{
+        DB: db,
+    }
+    chain.AddBlock(genesis)
+
+    // chain := bc.LoadChain(filename)
     defer func() {
         chain.DB.Close()
     }()
@@ -97,22 +108,22 @@ func compareChains(address string, num uint64) string {
             Data: fmt.Sprintf("%d", i),
         })
         if res == nil {
-            println("AAA")
+            // println("AAA")
             return "fail"
         }
         block := bc.DeserializeBlock(res.Data)
         if block == nil {
-            println("BBB")
+            // println("BBB")
             return "fail"
         }
         if !chain.BlockIsValid(block) {
-            println("CCC")
+            // println("CCC")
             return "fail"
         }
         chain.AddBlock(block)
     }
 
-    println("DDD")
+    // println("DDD")
 
     Chain.DB.Close()
     os.Remove(Filename)
@@ -195,10 +206,11 @@ func addTransaction(pack *nt.Package) string {
     diff := mod < bc.TIME_SESSION
     if len(Block.Transactions) == bc.TXS_LIMIT || (!diff && len(Block.Transactions) != 0) {
         go func() {
+            // fmt.Println("!", mod, bc.TIME_SESSION, bc.TIME_SESSION - mod)
+            block := *Block
             if diff {
                 time.Sleep(bc.TIME_SESSION - mod)
             }
-            block := *Block
             res := Chain.AcceptBlock(User, &block)
             // println(666)
             if res != nil && bytes.Equal(block.PrevHash, Block.PrevHash) {

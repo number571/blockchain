@@ -57,31 +57,31 @@ func (chain *BlockChain) BlockIsValid(block *Block) bool {
     // }()
     switch {
     case block == nil: 
-        println(1)
+        // println(1)
         return false
     case block.Difficulty != DIFFICULTY: 
-        println(2)
+        // println(2)
         return false
     case !block.hashIsValid(): 
-        println(3)
+        // println(3)
         return false
     case !chain.hashIsValid(block, chain.Size()): 
-        println(4)
+        // println(4)
         return false
     case !block.signIsValid(): 
-        println(5)
+        // println(5)
         return false
     case !block.proofIsValid(): 
-        println(6)
+        // println(6)
         return false
     case !block.mappingIsValid(): 
-        println(7)
+        // println(7)
         return false
     case !chain.timeIsValid(block, chain.Size()):
-        println(8)
+        // println(8)
         return false
     case !chain.transactionsIsValid(block): 
-        println(9)
+        // println(9)
         return false
     }
     return true
@@ -228,6 +228,42 @@ func (chain *BlockChain) AddBlock(block *Block) {
         Base64Encode(block.CurrHash),
         SerializeBlock(block),
     )
+}
+
+func (chain *BlockChain) timeIsValid(block *Block, index uint64) bool {
+    btime, err := time.Parse(time.RFC3339, block.TimeStamp)
+    if err != nil {
+        // fmt.Println("@", 1)
+        return false
+    }
+
+    var sblock string
+    row := chain.DB.QueryRow("SELECT Block FROM BlockChain WHERE Hash=$1", Base64Encode(block.PrevHash))
+    row.Scan(&sblock)
+
+    lblock := DeserializeBlock(sblock)
+    if lblock == nil {
+        // fmt.Println("@", 2)
+        return false
+    }
+
+    ltime, err := time.Parse(time.RFC3339, lblock.TimeStamp)
+    if err != nil {
+        // fmt.Println("@", 3)
+        return false
+    }
+
+    result := btime.Sub(ltime)
+
+    // fmt.Println(SerializeBlock(block))
+    // fmt.Println()
+    // fmt.Println(SerializeBlock(lblock))
+    // fmt.Println()
+
+    // fmt.Printf("@:: %v - %v\n", btime, ltime)
+    // fmt.Printf("@:: %v - %v\n", result, TIME_SESSION)
+
+    return result >= TIME_SESSION
 }
 
 func (chain *BlockChain) hashIsValid(block *Block, index uint64) bool {

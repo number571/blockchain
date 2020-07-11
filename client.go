@@ -116,7 +116,7 @@ func chainPrint() {
 		if res.Data == "" {
 			break
 		}
-		fmt.Printf("[%d] => %s\n", i, res.Data)	
+		fmt.Printf("[%d] => %s\n", i+1, res.Data)	
 	}
 	fmt.Println()
 }
