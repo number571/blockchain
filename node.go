@@ -4,7 +4,6 @@ import (
 	"os"
 	"fmt"
 	"strings"
-	"io/ioutil"
 	"encoding/json"
 	nt "./network"
 	bc "./blockchain"
@@ -106,7 +105,6 @@ func init() {
 	}
 
 	Block = bc.NewBlock(User.Address(), Chain.LastHash())
-	// работа с адресами
 }
 
 func main() {
@@ -134,40 +132,4 @@ func chainLoad(filename string) *bc.BlockChain {
 		return nil 
 	}
 	return chain
-}
-
-func userNew(filename string) *bc.User {
-	user := bc.NewUser()
-	if user == nil {
-		return nil
-	}
-	err := writeFile(filename, user.Purse())
-	if err != nil {
-		return nil
-	}
-	return user
-}
-
-func userLoad(filename string) *bc.User {
-	priv := readFile(filename)
-	if priv == "" {
-		return nil 
-	}
-	user := bc.LoadUser(priv)
-	if user == nil {
-		return nil 
-	}
-	return user
-}
-
-func writeFile(filename string, data string) error {
-	return ioutil.WriteFile(filename, []byte(data), 0644)
-}
-
-func readFile(filename string) string {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return ""
-	}
-	return string(data)
 }

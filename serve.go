@@ -15,6 +15,11 @@ import (
     nt "./network" 
 )
 
+var (
+    IsMining = false
+    BreakMining = make(chan bool)
+)
+
 func handleServer(conn nt.Conn, pack *nt.Package) {
     nt.Handle(GET_SIZE, conn, pack, getSize)
     nt.Handle(ADD_BLOCK, conn, pack, addBlock)
@@ -52,6 +57,11 @@ func addBlock(pack *nt.Package) string {
 
     Chain.AddBlock(block)
     Block = bc.NewBlock(User.Address(), Chain.LastHash())
+
+    if IsMining {
+        BreakMining <- true
+        IsMining = false
+    }
 
     // println(555)
     return "ok"
@@ -132,6 +142,11 @@ func compareChains(address string, num uint64) string {
     Chain = bc.LoadChain(Filename)
     Block = bc.NewBlock(User.Address(), Chain.LastHash())
 
+    if IsMining {
+        BreakMining <- true
+        IsMining = false
+    }
+
     return "ok"
 }
 
@@ -211,8 +226,10 @@ func addTransaction(pack *nt.Package) string {
             if diff {
                 time.Sleep(bc.TIME_SESSION - mod)
             }
-            res := Chain.AcceptBlock(User, &block)
+            IsMining = true
+            res := Chain.AcceptBlock(User, &block, BreakMining)
             // println(666)
+            IsMining = false
             if res != nil && bytes.Equal(block.PrevHash, Block.PrevHash) {
                 // println(555)
                 Chain.AddBlock(&block)

@@ -6,7 +6,6 @@ import (
 	"bufio"
 	"strconv"
 	"strings"
-	"io/ioutil"
 	"encoding/json"
 	nt "./network"
 	bc "./blockchain"
@@ -160,18 +159,17 @@ func chainBalance(splited []string) {
 		fmt.Println("fail: len(splited) != 2\n")
 		return
 	}
-	res := nt.Send(Addresses[0], &nt.Package{
-		Option: GET_BALANCE,
-		Data: splited[1],
-	})
-	fmt.Println("Balance:", res.Data, "coins\n")
+	for _, addr := range Addresses {
+		res := nt.Send(addr, &nt.Package{
+			Option: GET_BALANCE,
+			Data: splited[1],
+		})
+		fmt.Printf("Balance (%s): %s coins\n", addr, res.Data)
+	}
+	fmt.Println()
 }
 
 func userBalance() {
-	if User == nil {
-		fmt.Println("fail: user == nil\n")
-		return
-	}
 	for _, addr := range Addresses {
 		res := nt.Send(addr, &nt.Package{
 			Option: GET_BALANCE,
@@ -183,55 +181,11 @@ func userBalance() {
 }
 
 func userAddress() {
-	if User == nil {
-		fmt.Println("fail: user == nil\n")
-		return
-	}
 	fmt.Println("Address:", User.Address(), "\n")
 }
 
 func userPurse() {
-	if User == nil {
-		fmt.Println("fail: user == nil\n")
-		return
-	}
 	fmt.Println("Purse:", User.Purse(), "\n")
-}
-
-func userNew(filename string) *bc.User {
-	user := bc.NewUser()
-	if user == nil {
-		return nil
-	}
-	err := writeFile(filename, user.Purse())
-	if err != nil {
-		return nil
-	}
-	return user
-}
-
-func userLoad(filename string) *bc.User {
-	priv := readFile(filename)
-	if priv == "" {
-		return nil 
-	}
-	user := bc.LoadUser(priv)
-	if user == nil {
-		return nil 
-	}
-	return user
-}
-
-func writeFile(filename string, data string) error {
-	return ioutil.WriteFile(filename, []byte(data), 0644)
-}
-
-func readFile(filename string) string {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return ""
-	}
-	return string(data)
 }
 
 func inputString(begin string) string {

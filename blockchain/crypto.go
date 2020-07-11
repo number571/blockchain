@@ -55,7 +55,7 @@ func Verify(pub *rsa.PublicKey, data, sign []byte) error {
 }
 
 // POW for check hash package by Nonce.
-func ProofOfWork(blockHash []byte, difficulty uint8) uint64 {
+func ProofOfWork(blockHash []byte, difficulty uint8, ch chan bool) uint64 {
 	var (
 		Target  = big.NewInt(1)
 		intHash = big.NewInt(1)
@@ -64,24 +64,32 @@ func ProofOfWork(blockHash []byte, difficulty uint8) uint64 {
 	)
 	Target.Lsh(Target, 256-uint(difficulty))
 	for nonce < math.MaxUint64 {
-		hash = HashSum(bytes.Join(
-			[][]byte{
-				blockHash,
-				ToBytes(nonce),
-			},
-			[]byte{},
-		))
-		if DEBUG {
-			fmt.Printf("\rMining: %s", Base64Encode(hash))
-		}
-		intHash.SetBytes(hash)
-		if intHash.Cmp(Target) == -1 {
+		select {
+		case <- ch:
 			if DEBUG {
 				fmt.Println()
 			}
-			break
+			return nonce
+		default:
+			hash = HashSum(bytes.Join(
+				[][]byte{
+					blockHash,
+					ToBytes(nonce),
+				},
+				[]byte{},
+			))
+			if DEBUG {
+				fmt.Printf("\rMining: %s", Base64Encode(hash))
+			}
+			intHash.SetBytes(hash)
+			if intHash.Cmp(Target) == -1 {
+				if DEBUG {
+					fmt.Println()
+				}
+				return nonce
+			}
+			nonce++
 		}
-		nonce++
 	}
 	return nonce
 }

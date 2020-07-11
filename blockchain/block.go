@@ -58,8 +58,8 @@ func (block *Block) sign(priv *rsa.PrivateKey) []byte {
     return Sign(priv, block.CurrHash)
 }
 
-func (block *Block) proof() uint64 {
-    return ProofOfWork(block.CurrHash, block.Difficulty)
+func (block *Block) proof(ch chan bool) uint64 {
+    return ProofOfWork(block.CurrHash, block.Difficulty, ch)
 }
 
 func (block *Block) hashIsValid() bool {

@@ -205,7 +205,7 @@ func (chain *BlockChain) LastHash() []byte {
     return Base64Decode(hash)
 }
 
-func (chain *BlockChain) AcceptBlock(user *User, block *Block) *Block {
+func (chain *BlockChain) AcceptBlock(user *User, block *Block, ch chan bool) *Block {
     if !chain.transactionsIsValid(block) {
         return nil
     }
@@ -218,7 +218,7 @@ func (chain *BlockChain) AcceptBlock(user *User, block *Block) *Block {
     block.TimeStamp = time.Now().Format(time.RFC3339)
     block.CurrHash  = block.hash()
     block.Signature = block.sign(user.Private())
-    block.Nonce     = block.proof()
+    block.Nonce     = block.proof(ch)
     return block
 }
 
@@ -234,6 +234,11 @@ func (chain *BlockChain) timeIsValid(block *Block, index uint64) bool {
     btime, err := time.Parse(time.RFC3339, block.TimeStamp)
     if err != nil {
         // fmt.Println("@", 1)
+        return false
+    }
+
+    diff := time.Now().Sub(btime)
+    if diff < 0 {
         return false
     }
 
