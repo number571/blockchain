@@ -1,17 +1,13 @@
 package main
 
 import (
-	"io/ioutil"
 	bc "./blockchain"
+	"io/ioutil"
 )
 
 var (
-	Filename string
 	Addresses []string
-	Serve string
-	Chain *bc.BlockChain
-	Block *bc.Block
-	User  *bc.User
+	User      *bc.User
 )
 
 const (
@@ -19,12 +15,12 @@ const (
 )
 
 const (
-	GET_SIZE         = "[GET_SIZE]"
-	ADD_BLOCK        = "[ADD_BLOCK]"
-	GET_CHAIN        = "[GET_CHAIN]"
-	GET_LASTHASH     = "[GET_LASTHASH]"
-	GET_BALANCE      = "[GET_BALANCE]"
-	ADD_TRANSACTION  = "[ADD_TRANSACTION]"
+	GET_SIZE        = "[GET_SIZE]"
+	ADD_BLOCK       = "[ADD_BLOCK]"
+	GET_CHAIN       = "[GET_CHAIN]"
+	GET_LASTHASH    = "[GET_LASTHASH]"
+	GET_BALANCE     = "[GET_BALANCE]"
+	ADD_TRANSACTION = "[ADD_TRANSACTION]"
 )
 
 func userNew(filename string) *bc.User {
@@ -42,11 +38,11 @@ func userNew(filename string) *bc.User {
 func userLoad(filename string) *bc.User {
 	priv := readFile(filename)
 	if priv == "" {
-		return nil 
+		return nil
 	}
 	user := bc.LoadUser(priv)
 	if user == nil {
-		return nil 
+		return nil
 	}
 	return user
 }

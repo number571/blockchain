@@ -1,18 +1,17 @@
 package main
 
 import (
-	"os"
-	"fmt"
-	"strings"
-	"encoding/json"
-	nt "./network"
 	bc "./blockchain"
+	nt "./network"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
 )
 
 func init() {
 	if len(os.Args) < 2 {
-		fmt.Println("failed: len(os.Args) < 2\n")
-		os.Exit(1)
+		panic("failed: len(os.Args) < 2")
 	}
 	var (
 		serveStr     = ""
@@ -55,8 +54,7 @@ func init() {
 	}
 
 	if !(userNewExist || userLoadExist) || !(chainNewExist || chainLoadExist) || !serveExist || !addrExist {
-		fmt.Println("failed: !(userNewExist || userLoadExist) || !(chainNewExist || chainLoadExist) || !serveExist || !addrExist\n")
-		os.Exit(1)
+		panic("failed: !(userNewExist || userLoadExist) || !(chainNewExist || chainLoadExist) || !serveExist || !addrExist")
 	}
 
 	Serve = serveStr
@@ -64,8 +62,7 @@ func init() {
 	var addresses []string
 	err := json.Unmarshal([]byte(readFile(addrStr)), &addresses)
 	if err != nil {
-		fmt.Println("failed: load addresses\n")
-		os.Exit(1)
+		panic("failed: load addresses")
 	}
 
 	var mapaddr = make(map[string]bool)
@@ -87,8 +84,7 @@ func init() {
 		User = userLoad(userLoadStr)
 	}
 	if User == nil {
-		fmt.Println("failed: load user\n")
-		os.Exit(1)
+		panic("failed: load user")
 	}
 
 	if chainNewExist {
@@ -100,8 +96,7 @@ func init() {
 		Chain = chainLoad(chainLoadStr)
 	}
 	if Chain == nil {
-		fmt.Println("failed: load chain\n")
-		os.Exit(1)
+		panic("failed: load chain")
 	}
 
 	Block = bc.NewBlock(User.Address(), Chain.LastHash())
@@ -129,7 +124,7 @@ func chainNew(filename string) *bc.BlockChain {
 func chainLoad(filename string) *bc.BlockChain {
 	chain := bc.LoadChain(filename)
 	if chain == nil {
-		return nil 
+		return nil
 	}
 	return chain
 }

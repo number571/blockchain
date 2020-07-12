@@ -1,20 +1,19 @@
 package main
 
 import (
-	"os"
-	"fmt"
+	bc "./blockchain"
+	nt "./network"
 	"bufio"
+	"encoding/json"
+	"fmt"
+	"os"
 	"strconv"
 	"strings"
-	"encoding/json"
-	nt "./network"
-	bc "./blockchain"
 )
 
 func init() {
 	if len(os.Args) < 2 {
-		fmt.Println("failed: len(os.Args) < 2\n")
-		os.Exit(1)
+		panic("failed: len(os.Args) < 2")
 	}
 	var (
 		addrStr     = ""
@@ -43,17 +42,14 @@ func init() {
 
 	err := json.Unmarshal([]byte(readFile(addrStr)), &Addresses)
 	if err != nil {
-		fmt.Println("failed: load addresses\n")
-		os.Exit(1)
+		panic("failed: load addresses")
 	}
 	if len(Addresses) == 0 {
-		fmt.Println("failed: len(Addresses) == 0\n")
-		os.Exit(1)
+		panic("failed: len(Addresses) == 0")
 	}
 
 	if !(userNewExist || userLoadExist) || !addrExist {
-		fmt.Println("failed: !(userNewExist || userLoadExist) || !addrExist\n")
-		os.Exit(1)
+		panic("failed: !(userNewExist || userLoadExist) || !addrExist")
 	}
 
 	if userNewExist {
@@ -63,8 +59,7 @@ func init() {
 		User = userLoad(userLoadStr)
 	}
 	if User == nil {
-		fmt.Println("failed: load user\n")
-		os.Exit(1)
+		panic("failed: load user")
 	}
 }
 
@@ -81,26 +76,33 @@ func handleClient() {
 		message = inputString("")
 		splited = strings.Split(message, " ")
 		switch splited[0] {
-		case "/exit": os.Exit(0)
+		case "/exit":
+			os.Exit(0)
 		case "/user":
 			if len(splited) < 2 {
 				fmt.Println("failed: len(user) < 2\n")
 				continue
 			}
 			switch splited[1] {
-			case "address": userAddress()
-			case "purse": userPurse()
-			case "balance": userBalance() // ИЗМЕНИТЬ В КЛИЕНТЕ
+			case "address":
+				userAddress()
+			case "purse":
+				userPurse()
+			case "balance":
+				userBalance()
 			}
-		case "/chain": 
+		case "/chain":
 			if len(splited) < 2 {
 				fmt.Println("failed: len(chain) < 2\n")
 				continue
 			}
 			switch splited[1] {
-			case "print": chainPrint()
-			case "tx": chainTX(splited[1:])
-			case "balance": chainBalance(splited[1:]) // ИЗМЕНИТЬ В КЛИЕНТЕ
+			case "print":
+				chainPrint()
+			case "tx":
+				chainTX(splited[1:])
+			case "balance":
+				chainBalance(splited[1:])
 			}
 		}
 	}
@@ -110,12 +112,12 @@ func chainPrint() {
 	for i := 0; ; i++ {
 		res := nt.Send(Addresses[0], &nt.Package{
 			Option: GET_CHAIN,
-			Data: fmt.Sprintf("%d", i),
+			Data:   fmt.Sprintf("%d", i),
 		})
 		if res.Data == "" {
 			break
 		}
-		fmt.Printf("[%d] => %s\n", i+1, res.Data)	
+		fmt.Printf("[%d] => %s\n", i+1, res.Data)
 	}
 	fmt.Println()
 }
@@ -140,7 +142,7 @@ func chainTX(splited []string) {
 		tx := bc.NewTransaction(User, bc.Base64Decode(res.Data), splited[1], uint64(num))
 		res = nt.Send(addr, &nt.Package{
 			Option: ADD_TRANSACTION,
-			Data: bc.SerializeTX(tx),
+			Data:   bc.SerializeTX(tx),
 		})
 		if res == nil {
 			continue
@@ -159,21 +161,18 @@ func chainBalance(splited []string) {
 		fmt.Println("fail: len(splited) != 2\n")
 		return
 	}
-	for _, addr := range Addresses {
-		res := nt.Send(addr, &nt.Package{
-			Option: GET_BALANCE,
-			Data: splited[1],
-		})
-		fmt.Printf("Balance (%s): %s coins\n", addr, res.Data)
-	}
-	fmt.Println()
+	printBalance(splited[1])
 }
 
 func userBalance() {
+	printBalance(User.Address())
+}
+
+func printBalance(useraddr string) {
 	for _, addr := range Addresses {
 		res := nt.Send(addr, &nt.Package{
 			Option: GET_BALANCE,
-			Data: User.Address(),
+			Data:   useraddr,
 		})
 		fmt.Printf("Balance (%s): %s coins\n", addr, res.Data)
 	}

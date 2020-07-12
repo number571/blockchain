@@ -1,5 +1,5 @@
 # Blockchain
-Blockchain example. Template version.
+> Blockchain example. 
 
 ### Compile:
 ```

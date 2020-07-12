@@ -1,18 +1,18 @@
 package blockchain
 
 import (
-	"fmt"
 	"bytes"
 	"crypto"
-	"math"
-	mrand"math/rand"
-	"math/big"
-	"crypto/x509"
-	"crypto/rsa"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/binary"
+	"fmt"
+	"math"
+	"math/big"
+	mrand "math/rand"
 )
 
 // Create private key by size bits.
@@ -65,7 +65,7 @@ func ProofOfWork(blockHash []byte, difficulty uint8, ch chan bool) uint64 {
 	Target.Lsh(Target, 256-uint(difficulty))
 	for nonce < math.MaxUint64 {
 		select {
-		case <- ch:
+		case <-ch:
 			if DEBUG {
 				fmt.Println()
 			}

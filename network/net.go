@@ -13,7 +13,7 @@ func Listen(address string, handle func(Conn, *Package)) Listener {
 	if len(splited) != 2 {
 		return nil
 	}
-	listener, err := net.Listen("tcp", "0.0.0.0:" + splited[1])
+	listener, err := net.Listen("tcp", "0.0.0.0:"+splited[1])
 	if err != nil {
 		return nil
 	}
@@ -46,7 +46,6 @@ func Send(address string, pack *Package) *Package {
 	if err != nil {
 		return nil
 	}
-	// defer conn.Close()
 	conn.Write([]byte(SerializePackage(pack) + ENDBYTES))
 	return readPackage(conn)
 }
@@ -57,14 +56,14 @@ func Handle(option string, conn Conn, pack *Package, handle func(*Package) strin
 	}
 	conn.Write([]byte(SerializePackage(&Package{
 		Option: option,
-		Data: handle(pack),
+		Data:   handle(pack),
 	}) + ENDBYTES))
 	return true
 }
 
 func readPackage(conn net.Conn) *Package {
 	var (
-		data     string
+		data   string
 		size   = uint64(0)
 		buffer = make([]byte, BUFFSIZE)
 	)

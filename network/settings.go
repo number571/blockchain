@@ -8,5 +8,5 @@ const (
 
 type Package struct {
 	Option string
-	Data string
+	Data   string
 }
