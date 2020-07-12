@@ -12,7 +12,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 var (
@@ -195,21 +194,8 @@ func addTransaction(pack *nt.Package) string {
 		return "fail"
 	}
 	if len(Block.Transactions) == bc.TXS_LIMIT {
-		lastBlock := getLastBlock()
-		if lastBlock == nil {
-			return "fail"
-		}
-		btime, err := time.Parse(time.RFC3339, lastBlock.TimeStamp)
-		if err != nil {
-			return "fail"
-		}
-		mod := time.Now().Sub(btime)
-		diff := mod < bc.TIME_SESSION
 		go func() {
 			block := *Block
-			if diff {
-				time.Sleep(bc.TIME_SESSION - mod)
-			}
 			IsMining = true
 			res := Chain.AcceptBlock(User, &block, BreakMining)
 			IsMining = false
@@ -221,13 +207,6 @@ func addTransaction(pack *nt.Package) string {
 		}()
 	}
 	return "ok"
-}
-
-func getLastBlock() *bc.Block {
-	var sblock string
-	row := Chain.DB.QueryRow("SELECT Block FROM BlockChain ORDER BY Id DESC")
-	row.Scan(&sblock)
-	return bc.DeserializeBlock(sblock)
 }
 
 func pushBlockToNet(block *bc.Block) {

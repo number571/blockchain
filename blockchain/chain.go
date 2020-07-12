@@ -242,7 +242,7 @@ func (chain *BlockChain) timeIsValid(block *Block, index uint64) bool {
 	}
 
 	result := btime.Sub(ltime)
-	return result >= TIME_SESSION
+	return result > 0
 }
 
 func (chain *BlockChain) hashIsValid(block *Block, index uint64) bool {
