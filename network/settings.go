@@ -7,6 +7,6 @@ const (
 )
 
 type Package struct {
-	Option string
+	Option int
 	Data   string
 }

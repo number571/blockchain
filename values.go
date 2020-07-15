@@ -15,12 +15,11 @@ const (
 )
 
 const (
-	GET_SIZE        = "[GET_SIZE]"
-	ADD_BLOCK       = "[ADD_BLOCK]"
-	GET_CHAIN       = "[GET_CHAIN]"
-	GET_LASTHASH    = "[GET_LASTHASH]"
-	GET_BALANCE     = "[GET_BALANCE]"
-	ADD_TRANSACTION = "[ADD_TRANSACTION]"
+	ADD_BLOCK = iota + 1
+	ADD_TRNSX 
+	GET_BLOCK       
+	GET_LHASH    
+	GET_BLNCE   
 )
 
 func userNew(filename string) *bc.User {

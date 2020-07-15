@@ -104,6 +104,8 @@ func handleClient() {
 			case "balance":
 				chainBalance(splited[1:])
 			}
+		default:
+			fmt.Println("command undefined\n")
 		}
 	}
 }
@@ -111,7 +113,7 @@ func handleClient() {
 func chainPrint() {
 	for i := 0; ; i++ {
 		res := nt.Send(Addresses[0], &nt.Package{
-			Option: GET_CHAIN,
+			Option: GET_BLOCK,
 			Data:   fmt.Sprintf("%d", i),
 		})
 		if res.Data == "" {
@@ -134,14 +136,14 @@ func chainTX(splited []string) {
 	}
 	for _, addr := range Addresses {
 		res := nt.Send(addr, &nt.Package{
-			Option: GET_LASTHASH,
+			Option: GET_LHASH,
 		})
 		if res == nil {
 			continue
 		}
 		tx := bc.NewTransaction(User, bc.Base64Decode(res.Data), splited[1], uint64(num))
 		res = nt.Send(addr, &nt.Package{
-			Option: ADD_TRANSACTION,
+			Option: ADD_TRNSX,
 			Data:   bc.SerializeTX(tx),
 		})
 		if res == nil {
@@ -164,14 +166,10 @@ func chainBalance(splited []string) {
 	printBalance(splited[1])
 }
 
-func userBalance() {
-	printBalance(User.Address())
-}
-
 func printBalance(useraddr string) {
 	for _, addr := range Addresses {
 		res := nt.Send(addr, &nt.Package{
-			Option: GET_BALANCE,
+			Option: GET_BLNCE,
 			Data:   useraddr,
 		})
 		fmt.Printf("Balance (%s): %s coins\n", addr, res.Data)
@@ -185,6 +183,10 @@ func userAddress() {
 
 func userPurse() {
 	fmt.Println("Purse:", User.Purse(), "\n")
+}
+
+func userBalance() {
+	printBalance(User.Address())
 }
 
 func inputString(begin string) string {

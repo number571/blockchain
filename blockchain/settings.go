@@ -21,7 +21,6 @@ CREATE TABLE BlockChain (
 )
 
 const (
-	// DEBUG          = false
 	DEBUG          = true
 	KEY_SIZE       = 512
 	STORAGE_CHAIN  = "STORAGE-CHAIN"
@@ -29,8 +28,8 @@ const (
 	STORAGE_REWARD = 1
 	GENESIS_BLOCK  = "GENESIS-BLOCK"
 	GENESIS_REWARD = 100
-	DIFFICULTY     = 20              // 15
-	TXS_LIMIT      = 2               // 6
+	DIFFICULTY     = 20
+	TXS_LIMIT      = 2
 	START_PERCENT  = 10
 	RAND_BYTES     = 32
 )
@@ -47,16 +46,16 @@ type Block struct {
 	PrevHash     []byte
 	Transactions []Transaction
 	Mapping      map[string]uint64
-	Miner        string // Hashname
-	Signature    []byte // Miner sign
+	Miner        string
+	Signature    []byte
 	TimeStamp    string
 }
 
 type Transaction struct {
 	RandBytes []byte
 	PrevBlock []byte
-	Sender    string // Hashname
-	Receiver  string // Hashname
+	Sender    string
+	Receiver  string
 	Value     uint64
 	ToStorage uint64
 	CurrHash  []byte

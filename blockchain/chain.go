@@ -49,30 +49,6 @@ func LoadChain(filename string) *BlockChain {
 	return chain
 }
 
-func (chain *BlockChain) BlockIsValid(block *Block) bool {
-	switch {
-	case block == nil:
-		return false
-	case block.Difficulty != DIFFICULTY:
-		return false
-	case !block.hashIsValid():
-		return false
-	case !chain.hashIsValid(block, chain.Size()):
-		return false
-	case !block.signIsValid():
-		return false
-	case !block.proofIsValid():
-		return false
-	case !block.mappingIsValid():
-		return false
-	case !chain.timeIsValid(block, chain.Size()):
-		return false
-	case !chain.transactionsIsValid(block):
-		return false
-	}
-	return true
-}
-
 func (chain *BlockChain) Size() uint64 {
 	var index uint64
 	row := chain.DB.QueryRow("SELECT Id FROM BlockChain ORDER BY Id DESC")
@@ -111,16 +87,10 @@ func (chain *BlockChain) PrintChain() error {
 			fmt.Printf("[%d][SUCCESS] difficulty is valid\n", index)
 		}
 
-		if !block.hashIsValid() {
-			fmt.Printf("[%d][FAILED] block hash is not valid\n", index)
+		if !block.hashIsValid(chain, index-1) {
+			fmt.Printf("[%d][FAILED] hash is not valid\n", index)
 		} else {
-			fmt.Printf("[%d][SUCCESS] block hash is valid\n", index)
-		}
-
-		if !chain.hashIsValid(block, index-1) {
-			fmt.Printf("[%d][FAILED] chain hash is not valid\n", index)
-		} else {
-			fmt.Printf("[%d][SUCCESS] chain hash is valid\n", index)
+			fmt.Printf("[%d][SUCCESS] hash is valid\n", index)
 		}
 
 		if !block.signIsValid() {
@@ -141,7 +111,7 @@ func (chain *BlockChain) PrintChain() error {
 			fmt.Printf("[%d][SUCCESS] mapping is valid\n", index)
 		}
 
-		if !chain.timeIsValid(block, index-1) {
+		if !block.timeIsValid(chain, index-1) {
 			fmt.Printf("[%d][FAILED] time is not valid\n", index)
 		} else {
 			fmt.Printf("[%d][SUCCESS] time is valid\n", index)
@@ -149,7 +119,7 @@ func (chain *BlockChain) PrintChain() error {
 
 		size = chain.index
 		chain.index = index - 1
-		if !chain.transactionsIsValid(block) {
+		if !block.transactionsIsValid(chain) {
 			fmt.Printf("[%d][FAILED] transactions is not valid\n", index)
 		} else {
 			fmt.Printf("[%d][SUCCESS] transactions is valid\n", index)
@@ -168,7 +138,8 @@ func (chain *BlockChain) Balance(address string) uint64 {
 		block   *Block
 		balance uint64
 	)
-	rows, err := chain.DB.Query("SELECT Block FROM BlockChain WHERE Id <= $1 ORDER BY Id DESC", chain.index)
+	rows, err := chain.DB.Query("SELECT Block FROM BlockChain WHERE Id <= $1 ORDER BY Id DESC", 
+		chain.index)
 	if err != nil {
 		return balance
 	}
@@ -191,138 +162,10 @@ func (chain *BlockChain) LastHash() []byte {
 	return Base64Decode(hash)
 }
 
-func (chain *BlockChain) AcceptBlock(user *User, block *Block, ch chan bool) *Block {
-	if !chain.transactionsIsValid(block) {
-		return nil
-	}
-	block.AddTransaction(chain, &Transaction{
-		RandBytes: GenerateRandomBytes(RAND_BYTES),
-		Sender:    STORAGE_CHAIN,
-		Receiver:  user.Address(),
-		Value:     STORAGE_REWARD,
-	})
-	block.TimeStamp = time.Now().Format(time.RFC3339)
-	block.CurrHash = block.hash()
-	block.Signature = block.sign(user.Private())
-	block.Nonce = block.proof(ch)
-	return block
-}
-
 func (chain *BlockChain) AddBlock(block *Block) {
 	chain.index += 1
 	chain.DB.Exec("INSERT INTO BlockChain (Hash, Block) VALUES ($1, $2)",
 		Base64Encode(block.CurrHash),
 		SerializeBlock(block),
 	)
-}
-
-func (chain *BlockChain) timeIsValid(block *Block, index uint64) bool {
-	btime, err := time.Parse(time.RFC3339, block.TimeStamp)
-	if err != nil {
-		return false
-	}
-
-	diff := time.Now().Sub(btime)
-	if diff < 0 {
-		return false
-	}
-
-	var sblock string
-	row := chain.DB.QueryRow("SELECT Block FROM BlockChain WHERE Hash=$1", Base64Encode(block.PrevHash))
-	row.Scan(&sblock)
-
-	lblock := DeserializeBlock(sblock)
-	if lblock == nil {
-		return false
-	}
-
-	ltime, err := time.Parse(time.RFC3339, lblock.TimeStamp)
-	if err != nil {
-		return false
-	}
-
-	result := btime.Sub(ltime)
-	return result > 0
-}
-
-func (chain *BlockChain) hashIsValid(block *Block, index uint64) bool {
-	var id uint64
-	row := chain.DB.QueryRow("SELECT Id FROM BlockChain WHERE Hash=$1", Base64Encode(block.PrevHash))
-	row.Scan(&id)
-	return id == index
-}
-
-func (chain *BlockChain) transactionsIsValid(block *Block) bool {
-	lentxs := len(block.Transactions)
-	plusStorage := 0
-	for i := 0; i < lentxs; i++ {
-		if block.Transactions[i].Sender == STORAGE_CHAIN {
-			plusStorage = 1
-			break
-		}
-	}
-	if lentxs == 0 || lentxs > TXS_LIMIT+plusStorage {
-		return false
-	}
-	for i := 0; i < lentxs-1; i++ {
-		for j := i + 1; j < lentxs; j++ {
-			// rand bytes not be equal
-			if bytes.Equal(block.Transactions[i].RandBytes, block.Transactions[j].RandBytes) {
-				return false
-			}
-			// storage tx only one
-			if block.Transactions[i].Sender == STORAGE_CHAIN && block.Transactions[j].Sender == STORAGE_CHAIN {
-				return false
-			}
-		}
-	}
-	for i := 0; i < lentxs; i++ {
-		tx := block.Transactions[i]
-		// storage tx has no hash and signature
-		if tx.Sender == STORAGE_CHAIN {
-			if tx.Receiver != block.Miner || tx.Value != STORAGE_REWARD {
-				return false
-			}
-		} else {
-			if !tx.hashIsValid() {
-				return false
-			}
-			if !tx.signIsValid() {
-				return false
-			}
-		}
-		if !chain.balanceIsValid(block, tx.Sender) {
-			return false
-		}
-		if !chain.balanceIsValid(block, tx.Receiver) {
-			return false
-		}
-	}
-	return true
-}
-
-func (chain *BlockChain) balanceIsValid(block *Block, address string) bool {
-	lentxs := len(block.Transactions)
-	balanceInChain := chain.Balance(address)
-	balanceSubBlock := uint64(0)
-	balanceAddBlock := uint64(0)
-	for j := 0; j < lentxs; j++ {
-		tx := block.Transactions[j]
-		if tx.Sender == address {
-			balanceSubBlock += tx.Value + tx.ToStorage
-		}
-		if tx.Receiver == address {
-			balanceAddBlock += tx.Value
-		}
-		if STORAGE_CHAIN == address {
-			balanceAddBlock += tx.ToStorage
-		}
-	}
-	if _, ok := block.Mapping[address]; !ok {
-		return false
-	}
-	if (balanceInChain + balanceAddBlock - balanceSubBlock) != block.Mapping[address] {
-		return false
-	}
-	return true
 }

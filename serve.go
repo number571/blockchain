@@ -19,21 +19,19 @@ var (
 	Serve       string
 	Chain       *bc.BlockChain
 	Block       *bc.Block
+)
+
+var (
 	IsMining    bool
 	BreakMining = make(chan bool)
 )
 
 func handleServer(conn nt.Conn, pack *nt.Package) {
-	nt.Handle(GET_SIZE, conn, pack, getSize)
 	nt.Handle(ADD_BLOCK, conn, pack, addBlock)
-	nt.Handle(GET_CHAIN, conn, pack, getChain)
-	nt.Handle(GET_LASTHASH, conn, pack, getLastHash)
-	nt.Handle(GET_BALANCE, conn, pack, getBalance)
-	nt.Handle(ADD_TRANSACTION, conn, pack, addTransaction)
-}
-
-func getSize(pack *nt.Package) string {
-	return fmt.Sprintf("%d", Chain.Size())
+	nt.Handle(GET_BLOCK, conn, pack, getBlock)
+	nt.Handle(GET_LHASH, conn, pack, getLastHash)
+	nt.Handle(GET_BLNCE, conn, pack, getBalance)
+	nt.Handle(ADD_TRNSX, conn, pack, addTransaction)
 }
 
 func addBlock(pack *nt.Package) string {
@@ -41,8 +39,9 @@ func addBlock(pack *nt.Package) string {
 	if len(splited) != 3 {
 		return "fail"
 	}
+
 	block := bc.DeserializeBlock(splited[2])
-	if !Chain.BlockIsValid(block) {
+	if !block.IsValid(Chain) {
 		currSize := Chain.Size()
 		num, err := strconv.Atoi(splited[1])
 		if err != nil {
@@ -77,7 +76,7 @@ func compareChains(address string, num uint64) string {
 	}()
 
 	res := nt.Send(address, &nt.Package{
-		Option: GET_CHAIN,
+		Option: GET_BLOCK,
 		Data:   fmt.Sprintf("%d", 0),
 	})
 	if res == nil {
@@ -107,7 +106,7 @@ func compareChains(address string, num uint64) string {
 
 	for i := uint64(1); i < num; i++ {
 		res := nt.Send(address, &nt.Package{
-			Option: GET_CHAIN,
+			Option: GET_BLOCK,
 			Data:   fmt.Sprintf("%d", i),
 		})
 		if res == nil {
@@ -117,7 +116,7 @@ func compareChains(address string, num uint64) string {
 		if block == nil {
 			return "fail"
 		}
-		if !chain.BlockIsValid(block) {
+		if !block.IsValid(chain) {
 			return "fail"
 		}
 		chain.AddBlock(block)
@@ -158,23 +157,16 @@ func copyFile(src, dst string) error {
 	return out.Close()
 }
 
-func getChain(pack *nt.Package) string {
+func getBlock(pack *nt.Package) string {
 	num, err := strconv.Atoi(pack.Data)
 	if err != nil {
 		return ""
 	}
 	size := Chain.Size()
 	if uint64(num) < size {
-		return getBlock(Chain, num)
+		return selectBlock(Chain, num)
 	}
 	return ""
-}
-
-func getBlock(chain *bc.BlockChain, i int) string {
-	var block string
-	row := chain.DB.QueryRow("SELECT Block FROM BlockChain WHERE Id=$1", i+1)
-	row.Scan(&block)
-	return block
 }
 
 func getLastHash(pack *nt.Package) string {
@@ -183,6 +175,13 @@ func getLastHash(pack *nt.Package) string {
 
 func getBalance(pack *nt.Package) string {
 	return fmt.Sprintf("%d", Chain.Balance(pack.Data))
+}
+
+func selectBlock(chain *bc.BlockChain, i int) string {
+	var block string
+	row := chain.DB.QueryRow("SELECT Block FROM BlockChain WHERE Id=$1", i+1)
+	row.Scan(&block)
+	return block
 }
 
 func addTransaction(pack *nt.Package) string {
@@ -197,9 +196,9 @@ func addTransaction(pack *nt.Package) string {
 		go func() {
 			block := *Block
 			IsMining = true
-			res := Chain.AcceptBlock(User, &block, BreakMining)
+			res := (&block).Accept(Chain, User, BreakMining)
 			IsMining = false
-			if res != nil && bytes.Equal(block.PrevHash, Block.PrevHash) {
+			if res == nil && bytes.Equal(block.PrevHash, Block.PrevHash) {
 				Chain.AddBlock(&block)
 				pushBlockToNet(&block)
 			}

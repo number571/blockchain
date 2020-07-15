@@ -3,7 +3,6 @@ package blockchain
 import (
 	"bytes"
 	"crypto/rsa"
-	"errors"
 )
 
 func NewTransaction(user *User, lasthash []byte, to string, value uint64) *Transaction {
@@ -22,32 +21,12 @@ func NewTransaction(user *User, lasthash []byte, to string, value uint64) *Trans
 	return tx
 }
 
-func (block *Block) AddTransaction(chain *BlockChain, tx *Transaction) error {
-	if len(block.Transactions) == TXS_LIMIT && tx.Sender != STORAGE_CHAIN {
-		return errors.New("len tx = limit")
-	}
-	balanceInChain := chain.Balance(tx.Sender)
-	balanceInBlock := tx.Value + tx.ToStorage
-	if value, ok := block.Mapping[tx.Sender]; ok {
-		balanceInChain = value
-	}
-	if tx.Value > START_PERCENT && tx.ToStorage != STORAGE_REWARD {
-		return errors.New("storage reward pass")
-	}
-	if balanceInBlock > balanceInChain {
-		return errors.New("insufficient funds")
-	}
-	block.Mapping[tx.Sender] = balanceInChain - balanceInBlock
-	chain.addBalance(block, tx.Receiver, tx.Value)
-	chain.addBalance(block, STORAGE_CHAIN, tx.ToStorage)
-	block.Transactions = append(block.Transactions, *tx)
-	return nil
-}
-
-func (chain *BlockChain) addBalance(block *Block, receiver string, value uint64) {
-	balanceInChain := chain.Balance(receiver)
+func (block *Block) addBalance(chain *BlockChain, receiver string, value uint64) {
+	var balanceInChain uint64
 	if v, ok := block.Mapping[receiver]; ok {
 		balanceInChain = v
+	} else {
+		balanceInChain = chain.Balance(receiver)
 	}
 	block.Mapping[receiver] = balanceInChain + value
 }

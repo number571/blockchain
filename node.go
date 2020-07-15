@@ -53,8 +53,10 @@ func init() {
 		}
 	}
 
-	if !(userNewExist || userLoadExist) || !(chainNewExist || chainLoadExist) || !serveExist || !addrExist {
-		panic("failed: !(userNewExist || userLoadExist) || !(chainNewExist || chainLoadExist) || !serveExist || !addrExist")
+	if 	!(userNewExist || userLoadExist) || !(chainNewExist || chainLoadExist) || 
+		!serveExist || !addrExist {
+			panic("failed: !(userNewExist || userLoadExist)"+
+				"|| !(chainNewExist || chainLoadExist) || !serveExist || !addrExist")
 	}
 
 	Serve = serveStr
@@ -111,9 +113,6 @@ func main() {
 }
 
 func chainNew(filename string) *bc.BlockChain {
-	if User == nil {
-		return nil
-	}
 	err := bc.NewChain(filename, User.Address())
 	if err != nil {
 		return nil

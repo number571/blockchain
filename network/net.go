@@ -50,7 +50,7 @@ func Send(address string, pack *Package) *Package {
 	return readPackage(conn)
 }
 
-func Handle(option string, conn Conn, pack *Package, handle func(*Package) string) bool {
+func Handle(option int, conn Conn, pack *Package, handle func(*Package) string) bool {
 	if pack.Option != option {
 		return false
 	}
