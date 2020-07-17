@@ -21,16 +21,6 @@ func NewTransaction(user *User, lasthash []byte, to string, value uint64) *Trans
 	return tx
 }
 
-func (block *Block) addBalance(chain *BlockChain, receiver string, value uint64) {
-	var balanceInChain uint64
-	if v, ok := block.Mapping[receiver]; ok {
-		balanceInChain = v
-	} else {
-		balanceInChain = chain.Balance(receiver)
-	}
-	block.Mapping[receiver] = balanceInChain + value
-}
-
 func (tx *Transaction) hash() []byte {
 	return HashSum(bytes.Join(
 		[][]byte{

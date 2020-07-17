@@ -40,16 +40,16 @@ func init() {
 		}
 	}
 
+	if !(userNewExist || userLoadExist) || !addrExist {
+		panic("failed: !(userNewExist || userLoadExist) || !addrExist")
+	}
+
 	err := json.Unmarshal([]byte(readFile(addrStr)), &Addresses)
 	if err != nil {
 		panic("failed: load addresses")
 	}
 	if len(Addresses) == 0 {
 		panic("failed: len(Addresses) == 0")
-	}
-
-	if !(userNewExist || userLoadExist) || !addrExist {
-		panic("failed: !(userNewExist || userLoadExist) || !addrExist")
 	}
 
 	if userNewExist {
@@ -73,7 +73,7 @@ func handleClient() {
 		splited []string
 	)
 	for {
-		message = inputString("")
+		message = inputString("> ")
 		splited = strings.Split(message, " ")
 		switch splited[0] {
 		case "/exit":

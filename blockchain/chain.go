@@ -1,10 +1,7 @@
 package blockchain
 
 import (
-	"bytes"
 	"database/sql"
-	"errors"
-	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"time"
@@ -13,12 +10,12 @@ import (
 func NewChain(filename, receiver string) error {
 	file, err := os.Create(filename)
 	if err != nil {
-		return errors.New("create database")
+		return err
 	}
 	file.Close()
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
-		return errors.New("open database")
+		return err
 	}
 	defer db.Close()
 	_, err = db.Exec(CREATE_TABLE)
@@ -54,82 +51,6 @@ func (chain *BlockChain) Size() uint64 {
 	row := chain.DB.QueryRow("SELECT Id FROM BlockChain ORDER BY Id DESC")
 	row.Scan(&index)
 	return index
-}
-
-func (chain *BlockChain) PrintChain() error {
-	rows, err := chain.DB.Query("SELECT Id, Block FROM BlockChain")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	var (
-		sblock string
-		block  *Block
-		index  uint64
-		size   uint64
-	)
-	for rows.Next() {
-		rows.Scan(&index, &sblock)
-		block = DeserializeBlock(sblock)
-
-		if index == 1 {
-			if !bytes.Equal(block.CurrHash, []byte(GENESIS_BLOCK)) {
-				fmt.Printf("[%d][FAILED] Genesis block undefined\n", index)
-			} else {
-				fmt.Printf("[%d][SUCCESS] Genesis block found\n", index)
-			}
-			goto print
-		}
-
-		if block.Difficulty != DIFFICULTY {
-			fmt.Printf("[%d][FAILED] difficulty is not valid\n", index)
-		} else {
-			fmt.Printf("[%d][SUCCESS] difficulty is valid\n", index)
-		}
-
-		if !block.hashIsValid(chain, index-1) {
-			fmt.Printf("[%d][FAILED] hash is not valid\n", index)
-		} else {
-			fmt.Printf("[%d][SUCCESS] hash is valid\n", index)
-		}
-
-		if !block.signIsValid() {
-			fmt.Printf("[%d][FAILED] sign is not valid\n", index)
-		} else {
-			fmt.Printf("[%d][SUCCESS] sign is valid\n", index)
-		}
-
-		if !block.proofIsValid() {
-			fmt.Printf("[%d][FAILED] proof is not valid\n", index)
-		} else {
-			fmt.Printf("[%d][SUCCESS] proof is valid\n", index)
-		}
-
-		if !block.mappingIsValid() {
-			fmt.Printf("[%d][FAILED] mapping is not valid\n", index)
-		} else {
-			fmt.Printf("[%d][SUCCESS] mapping is valid\n", index)
-		}
-
-		if !block.timeIsValid(chain, index-1) {
-			fmt.Printf("[%d][FAILED] time is not valid\n", index)
-		} else {
-			fmt.Printf("[%d][SUCCESS] time is valid\n", index)
-		}
-
-		size = chain.index
-		chain.index = index - 1
-		if !block.transactionsIsValid(chain) {
-			fmt.Printf("[%d][FAILED] transactions is not valid\n", index)
-		} else {
-			fmt.Printf("[%d][SUCCESS] transactions is valid\n", index)
-		}
-		chain.index = size
-
-	print:
-		fmt.Printf("[%d] => %s\n\n", index, sblock)
-	}
-	return nil
 }
 
 func (chain *BlockChain) Balance(address string) uint64 {

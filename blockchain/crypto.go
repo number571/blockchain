@@ -15,7 +15,7 @@ import (
 	mrand "math/rand"
 )
 
-func GeneratePrivate(bits uint16) *rsa.PrivateKey {
+func GeneratePrivate(bits uint) *rsa.PrivateKey {
 	priv, err := rsa.GenerateKey(rand.Reader, int(bits))
 	if err != nil {
 		return nil
@@ -53,7 +53,7 @@ func ProofOfWork(blockHash []byte, difficulty uint8, ch chan bool) uint64 {
 	var (
 		Target  = big.NewInt(1)
 		intHash = big.NewInt(1)
-		nonce   = uint64(mrand.Intn(math.MaxInt32))
+		nonce   = uint64(mrand.Intn(math.MaxUint32))
 		hash    []byte
 	)
 	Target.Lsh(Target, 256-uint(difficulty))

@@ -108,7 +108,6 @@ func main() {
 	nt.Listen(Serve, handleServer)
 	for {
 		fmt.Scanln()
-		Chain.PrintChain()
 	}
 }
 

@@ -36,6 +36,9 @@ func (block *Block) Accept(chain *BlockChain, user *User, ch chan bool) error {
 }
 
 func (block *Block) AddTransaction(chain *BlockChain, tx *Transaction) error {
+	if tx == nil {
+		return errors.New("tx is null")
+	}
 	if tx.Value == 0 {
 		return errors.New("tx value = 0")
 	}
@@ -84,6 +87,16 @@ func (block *Block) IsValid(chain *BlockChain) bool {
 	return true
 }
 
+func (block *Block) addBalance(chain *BlockChain, receiver string, value uint64) {
+	var balanceInChain uint64
+	if v, ok := block.Mapping[receiver]; ok {
+		balanceInChain = v
+	} else {
+		balanceInChain = chain.Balance(receiver)
+	}
+	block.Mapping[receiver] = balanceInChain + value
+}
+
 func (block *Block) timeIsValid(chain *BlockChain, index uint64) bool {
 	btime, err := time.Parse(time.RFC3339, block.TimeStamp)
 	if err != nil {
@@ -128,11 +141,9 @@ func (block *Block) transactionsIsValid(chain *BlockChain) bool {
 	}
 	for i := 0; i < lentxs-1; i++ {
 		for j := i + 1; j < lentxs; j++ {
-			// rand bytes not be equal
 			if bytes.Equal(block.Transactions[i].RandBytes, block.Transactions[j].RandBytes) {
 				return false
 			}
-			// storage tx only one
 			if 	block.Transactions[i].Sender == STORAGE_CHAIN && 
 				block.Transactions[j].Sender == STORAGE_CHAIN {
 					return false
@@ -141,7 +152,6 @@ func (block *Block) transactionsIsValid(chain *BlockChain) bool {
 	}
 	for i := 0; i < lentxs; i++ {
 		tx := block.Transactions[i]
-		// storage tx has no hash and signature
 		if tx.Sender == STORAGE_CHAIN {
 			if tx.Receiver != block.Miner || tx.Value != STORAGE_REWARD {
 				return false

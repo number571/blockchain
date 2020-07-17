@@ -2,12 +2,12 @@ package blockchain
 
 import (
 	"database/sql"
-	"math/rand"
+	mrand "math/rand"
 	"time"
 )
 
 func init() {
-	rand.Seed(time.Now().UnixNano())
+	mrand.Seed(time.Now().UnixNano())
 }
 
 const (
