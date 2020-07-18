@@ -2,6 +2,7 @@ package network
 
 import (
 	"net"
+	"time"
 	"strings"
 )
 
@@ -47,7 +48,17 @@ func Send(address string, pack *Package) *Package {
 		return nil
 	}
 	conn.Write([]byte(SerializePackage(pack) + ENDBYTES))
-	return readPackage(conn)
+	var res = new(Package)
+ 	ch := make(chan bool)
+	go func() {
+		res = readPackage(conn)
+		ch <- true
+	}()
+ 	select {
+  		case <-ch:
+  		case <-time.After(WAITTIME * time.Second):
+ 	}
+ 	return res
 }
 
 func Handle(option int, conn Conn, pack *Package, handle func(*Package) string) bool {

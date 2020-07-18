@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 var (
@@ -19,6 +20,7 @@ var (
 	Serve       string
 	Chain       *bc.BlockChain
 	Block       *bc.Block
+	Mutex       sync.Mutex
 )
 
 var (
@@ -48,13 +50,18 @@ func addBlock(pack *nt.Package) string {
 			return "fail"
 		}
 		if currSize < uint64(num) {
-			return compareChains(splited[0], uint64(num))
+			go compareChains(splited[0], uint64(num))
+			return "ok"
 		}
 		return "fail"
 	}
 
+	Mutex.Lock()
+
 	Chain.AddBlock(block)
 	Block = bc.NewBlock(User.Address(), Chain.LastHash())
+
+	Mutex.Unlock()
 
 	if IsMining {
 		BreakMining <- true
@@ -64,11 +71,11 @@ func addBlock(pack *nt.Package) string {
 	return "ok"
 }
 
-func compareChains(address string, num uint64) string {
+func compareChains(address string, num uint64) {
 	filename := "temp_" + hex.EncodeToString(bc.GenerateRandomBytes(8))
 	file, err := os.Create(filename)
 	if err != nil {
-		return "fail"
+		return
 	}
 	file.Close()
 	defer func() {
@@ -80,17 +87,17 @@ func compareChains(address string, num uint64) string {
 		Data:   fmt.Sprintf("%d", 0),
 	})
 	if res == nil {
-		return "fail"
+		return
 	}
 
 	genesis := bc.DeserializeBlock(res.Data)
 	if genesis == nil {
-		return "fail"
+		return
 	}
 
 	db, err := sql.Open("sqlite3", filename)
 	if err != nil {
-		return "fail"
+		return
 	}
 	defer db.Close()
 
@@ -110,17 +117,19 @@ func compareChains(address string, num uint64) string {
 			Data:   fmt.Sprintf("%d", i),
 		})
 		if res == nil {
-			return "fail"
+			return
 		}
 		block := bc.DeserializeBlock(res.Data)
 		if block == nil {
-			return "fail"
+			return
 		}
 		if !block.IsValid(chain) {
-			return "fail"
+			return
 		}
 		chain.AddBlock(block)
 	}
+
+	Mutex.Lock()
 
 	Chain.DB.Close()
 	os.Remove(Filename)
@@ -129,12 +138,14 @@ func compareChains(address string, num uint64) string {
 	Chain = bc.LoadChain(Filename)
 	Block = bc.NewBlock(User.Address(), Chain.LastHash())
 
+	Mutex.Unlock()
+
 	if IsMining {
 		BreakMining <- true
 		IsMining = false
 	}
 
-	return "ok"
+	return
 }
 
 func copyFile(src, dst string) error {
@@ -189,31 +200,41 @@ func addTransaction(pack *nt.Package) string {
 	if tx == nil || len(Block.Transactions) == bc.TXS_LIMIT {
 		return "fail"
 	}
-	if Block.AddTransaction(Chain, tx) != nil {
+	Mutex.Lock()
+	err := Block.AddTransaction(Chain, tx)
+	Mutex.Unlock()
+	if err != nil {
 		return "fail"
 	}
 	if len(Block.Transactions) == bc.TXS_LIMIT {
 		go func() {
+			Mutex.Lock()
 			block := *Block
 			IsMining = true
+			Mutex.Unlock()
 			res := (&block).Accept(Chain, User, BreakMining)
+			Mutex.Lock()
 			IsMining = false
 			if res == nil && bytes.Equal(block.PrevHash, Block.PrevHash) {
 				Chain.AddBlock(&block)
 				pushBlockToNet(&block)
 			}
 			Block = bc.NewBlock(User.Address(), Chain.LastHash())
+			Mutex.Unlock()
 		}()
 	}
 	return "ok"
 }
 
 func pushBlockToNet(block *bc.Block) {
-	var sblock = bc.SerializeBlock(block)
+	var (
+		sblock = bc.SerializeBlock(block)
+		msg = Serve + SEPARATOR + fmt.Sprintf("%d", Chain.Size()) + SEPARATOR + sblock
+	)
 	for _, addr := range Addresses {
-		nt.Send(addr, &nt.Package{
+		go nt.Send(addr, &nt.Package{
 			Option: ADD_BLOCK,
-			Data:   Serve + SEPARATOR + fmt.Sprintf("%d", Chain.Size()) + SEPARATOR + sblock,
+			Data: msg,
 		})
 	}
 }

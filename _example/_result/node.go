@@ -14,12 +14,49 @@ import (
  _ "github.com/mattn/go-sqlite3"
  "io"
  "strconv"
+ "sync"
 )
+
+func readFile(filename string) string {
+ data, err := ioutil.ReadFile(filename)
+ if err != nil {
+  return ""
+ }
+ return string(data)
+}
+
+func userNew(filename string) *bc.User {
+ user := bc.NewUser()
+ if user == nil {
+  return nil
+ }
+ err := writeFile(filename, user.Purse())
+ if err != nil {
+  return nil
+ }
+ return user
+}
+
+func userLoad(filename string) *bc.User {
+ priv := readFile(filename)
+ if priv == "" {
+  return nil
+ }
+ user := bc.LoadUser(priv)
+ if user == nil {
+  return nil
+ }
+ return user
+}
 
 var (
  Addresses []string
  User *bc.User
 )
+
+func writeFile(filename string, data string) error {
+ return ioutil.WriteFile(filename, []byte(data), 0644)
+}
 
 const (
  ADD_BLOCK = iota + 1
@@ -27,22 +64,6 @@ const (
  GET_BLOCK       
  GET_LHASH    
  GET_BLNCE   
-)
-
-var (
- Filename    string
- Serve       string
- Chain       *bc.BlockChain
- Block       *bc.Block
-)
-
-var (
- IsMining bool
- BreakMining = make(chan bool)
-)
-
-const (
- SEPARATOR = "_SEPARATOR_"
 )
 
 func init() {
@@ -134,6 +155,13 @@ func init() {
  Block = bc.NewBlock(User.Address(), Chain.LastHash())
 }
 
+var (
+ Filename    string
+ Serve       string
+ Chain       *bc.BlockChain
+ Block       *bc.Block
+)
+
 func chainNew(filename string) *bc.BlockChain {
  err := bc.NewChain(filename, User.Address())
  if err != nil {
@@ -178,12 +206,15 @@ func addBlock(pack *nt.Package) string {
    return "fail"
   }
   if currSize < uint64(num) {
-   return compareChains(splited[0], uint64(num))
+   go compareChains(splited[0], uint64(num))
+   return "ok "
   }
   return "fail"
  }
+ Mutex.Lock()
  Chain.AddBlock(block)
  Block = bc.NewBlock(User.Address(), Chain.LastHash())
+ Mutex.Unlock()
  if IsMining {
   BreakMining <- true
   IsMining = false
@@ -196,20 +227,27 @@ func addTransaction(pack *nt.Package) string {
  if tx == nil || len(Block.Transactions) == bc.TXS_LIMIT {
   return "fail"
  }
- if Block.AddTransaction(Chain, tx) != nil {
+ Mutex.Lock()
+ err := Block.AddTransaction(Chain, tx)
+ Mutex.Unlock()
+ if err != nil {
   return "fail"
  }
  if len(Block.Transactions) == bc.TXS_LIMIT {
   go func() {
+   Mutex.Lock()
    block := *Block
    IsMining = true
+   Mutex.Unlock()
    res := (&block).Accept(Chain, User, BreakMining)
+   Mutex.Lock()
    IsMining = false
    if res == nil && bytes.Equal(block.PrevHash, Block.PrevHash) {
     Chain.AddBlock(&block)
     pushBlockToNet(&block)
    }
    Block = bc.NewBlock(User.Address(), Chain.LastHash())
+   Mutex.Unlock()
   }()
  }
  return "ok"
@@ -234,6 +272,15 @@ func getLastHash(pack *nt.Package) string {
 func getBalance(pack *nt.Package) string {
  return fmt.Sprintf("%d", Chain.Balance(pack.Data))
 }
+
+const (
+ SEPARATOR = "_SEPARATOR_"
+)
+
+var (
+ IsMining bool
+ BreakMining = make(chan bool)
+)
 
 func compareChains(address string, num uint64) string {
  filename := "temp_" + hex.EncodeToString(bc.GenerateRandomBytes(8))
@@ -286,11 +333,13 @@ func compareChains(address string, num uint64) string {
   }
   chain.AddBlock(block)
  }
+ Mutex.Lock()
  Chain.DB.Close()
  os.Remove(Filename)
  copyFile(filename, Filename)
  Chain = bc.LoadChain(Filename)
  Block = bc.NewBlock(User.Address(), Chain.LastHash())
+ Mutex.Unlock()
  if IsMining {
   BreakMining <- true
   IsMining = false
@@ -298,12 +347,19 @@ func compareChains(address string, num uint64) string {
  return "ok"
 }
 
+var (
+  Mutex sync.Mutex
+)
+
 func pushBlockToNet(block *bc.Block) {
- var sblock = bc.SerializeBlock(block)
+ var (
+sblock = bc.SerializeBlock(block)
+ msg = Serve + SEPARATOR + fmt.Sprintf("%d", Chain.Size()) + SEPARATOR + sblock
+)
  for _, addr := range Addresses {
-  nt.Send(addr, &nt.Package{
+  go nt.Send(addr, &nt.Package{
    Option: ADD_BLOCK,
-   Data:   Serve + SEPARATOR + fmt.Sprintf("%d", Chain.Size()) + SEPARATOR + sblock,
+   Data:   msg,
   })
  }
 }
@@ -331,40 +387,4 @@ func copyFile(src, dst string) error {
   return err
  }
  return out.Close()
-}
-
-func readFile(filename string) string {
- data, err := ioutil.ReadFile(filename)
- if err != nil {
-  return ""
- }
- return string(data)
-}
-
-func userNew(filename string) *bc.User {
- user := bc.NewUser()
- if user == nil {
-  return nil
- }
- err := writeFile(filename, user.Purse())
- if err != nil {
-  return nil
- }
- return user
-}
-
-func userLoad(filename string) *bc.User {
- priv := readFile(filename)
- if priv == "" {
-  return nil
- }
- user := bc.LoadUser(priv)
- if user == nil {
-  return nil
- }
- return user
-}
-
-func writeFile(filename string, data string) error {
- return ioutil.WriteFile(filename, []byte(data), 0644)
 }

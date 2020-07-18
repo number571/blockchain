@@ -12,19 +12,6 @@ import (
  "strings"
 )
 
-var (
- Addresses []string
- User *bc.User
-)
-
-const (
- ADD_BLOCK = iota + 1
- ADD_TRNSX 
- GET_BLOCK       
- GET_LHASH    
- GET_BLNCE   
-)
-
 func init() {
  if len(os.Args) < 2 {
   panic("failed: len(os.Args) < 2")
@@ -105,6 +92,11 @@ func userLoad(filename string) *bc.User {
  }
  return user
 }
+
+var (
+ Addresses []string
+ User *bc.User
+)
 
 func writeFile(filename string, data string) error {
  return ioutil.WriteFile(filename, []byte(data), 0644)
@@ -238,7 +230,14 @@ func printBalance(useraddr string) {
  fmt.Println()
 }
 
+const (
+ ADD_BLOCK = iota + 1
+ ADD_TRNSX 
+ GET_BLOCK       
+ GET_LHASH    
+ GET_BLNCE   
+)
+
 func main() {
  handleClient()
 }
-

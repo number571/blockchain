@@ -3,20 +3,9 @@ package network
 import (
  "net"
  "strings"
+ "time"
  "encoding/json"
 )
-
-const (
- DMAXSIZE = (2 << 20) // (2^20)*2 = 2MiB
- BUFFSIZE = (4 << 10) // (2^10)*4 = 4KiB
-)
-
-const (
- ENDBYTES = "\000\005\007\001\001\007\005\000"
-)
-
-type Listener net.Listener
-type Conn net.Conn
 
 type Package struct {
  Option int
@@ -29,7 +18,17 @@ func Send(address string, pack *Package) *Package {
   return nil
  }
  conn.Write([]byte(SerializePackage(pack) + ENDBYTES))
- return readPackage(conn)
+ var res = new(Package)
+ ch := make(chan bool)
+go func() {
+res = readPackage(conn)
+ch <- true
+}()
+ select {
+  case <-ch:
+  case <-time.After(WAITTIME * time.Second):
+ }
+ return res
 }
 
 func SerializePackage(pack *Package) string {
@@ -40,16 +39,9 @@ func SerializePackage(pack *Package) string {
  return string(jsonData)
 }
 
-func Handle(option int, conn Conn, pack *Package, handle func(*Package) string) bool {
- if pack.Option != option {
-  return false
- }
- conn.Write([]byte(SerializePackage(&Package{
-  Option: option,
-  Data:   handle(pack),
- }) + ENDBYTES))
- return true
-}
+const (
+ ENDBYTES = "\000\005\007\001\001\007\005\000"
+)
 
 func readPackage(conn net.Conn) *Package {
  var (
@@ -74,6 +66,12 @@ func readPackage(conn net.Conn) *Package {
  }
  return DeserializePackage(data)
 }
+
+const (
+ WAITTIME = 5 // seconds
+ DMAXSIZE = (2 << 20) // (2^20)*2 = 2MiB
+ BUFFSIZE = (4 << 10) // (2^10)*4 = 4KiB
+)
 
 func DeserializePackage(data string) *Package {
   var pack Package
@@ -114,5 +112,19 @@ func handleConn(conn net.Conn, handle func(Conn, *Package)) {
   return
  }
  handle(Conn(conn), pack)
+}
+
+type Listener net.Listener
+type Conn net.Conn
+
+func Handle(option int, conn Conn, pack *Package, handle func(*Package) string) bool {
+ if pack.Option != option {
+  return false
+ }
+ conn.Write([]byte(SerializePackage(&Package{
+  Option: option,
+  Data:   handle(pack),
+ }) + ENDBYTES))
+ return true
 }
 
