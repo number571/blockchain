@@ -455,7 +455,7 @@ func (block *Block) balanceIsValid(chain *BlockChain, address string) bool {
   if tx.Receiver == address {
    balanceAddBlock += tx.Value
   }
-  if tx.Receiver == address && STORAGE_CHAIN == address {
+  if STORAGE_CHAIN == address {
    balanceAddBlock += tx.ToStorage
   }
  }
