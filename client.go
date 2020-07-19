@@ -116,7 +116,7 @@ func chainPrint() {
 			Option: GET_BLOCK,
 			Data:   fmt.Sprintf("%d", i),
 		})
-		if res.Data == "" {
+		if res == nil || res.Data == "" {
 			break
 		}
 		fmt.Printf("[%d] => %s\n", i+1, res.Data)
