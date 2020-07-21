@@ -43,7 +43,7 @@ func addBlock(pack *nt.Package) string {
 	}
 
 	block := bc.DeserializeBlock(splited[2])
-	if !block.IsValid(Chain) {
+	if !block.IsValid(Chain, Chain.Size()) {
 		currSize := Chain.Size()
 		num, err := strconv.Atoi(splited[1])
 		if err != nil {
@@ -123,7 +123,7 @@ func compareChains(address string, num uint64) {
 		if block == nil {
 			return
 		}
-		if !block.IsValid(chain) {
+		if !block.IsValid(chain, i) {
 			return
 		}
 		chain.AddBlock(block)
@@ -185,7 +185,7 @@ func getLastHash(pack *nt.Package) string {
 }
 
 func getBalance(pack *nt.Package) string {
-	return fmt.Sprintf("%d", Chain.Balance(pack.Data))
+	return fmt.Sprintf("%d", Chain.Balance(pack.Data, Chain.Size()))
 }
 
 func selectBlock(chain *bc.BlockChain, i int) string {

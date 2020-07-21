@@ -42,25 +42,23 @@ func LoadChain(filename string) *BlockChain {
 	chain := &BlockChain{
 		DB: db,
 	}
-	chain.index = chain.Size()
 	return chain
 }
 
 func (chain *BlockChain) Size() uint64 {
-	var index uint64
+	var size uint64
 	row := chain.DB.QueryRow("SELECT Id FROM BlockChain ORDER BY Id DESC")
-	row.Scan(&index)
-	return index
+	row.Scan(&size)
+	return size
 }
 
-func (chain *BlockChain) Balance(address string) uint64 {
+func (chain *BlockChain) Balance(address string, size uint64) uint64 {
 	var (
 		sblock  string
 		block   *Block
 		balance uint64
 	)
-	rows, err := chain.DB.Query("SELECT Block FROM BlockChain WHERE Id <= $1 ORDER BY Id DESC", 
-		chain.index)
+	rows, err := chain.DB.Query("SELECT Block FROM BlockChain WHERE Id <= $1 ORDER BY Id DESC", size)
 	if err != nil {
 		return balance
 	}
@@ -84,7 +82,6 @@ func (chain *BlockChain) LastHash() []byte {
 }
 
 func (chain *BlockChain) AddBlock(block *Block) {
-	chain.index += 1
 	chain.DB.Exec("INSERT INTO BlockChain (Hash, Block) VALUES ($1, $2)",
 		Base64Encode(block.CurrHash),
 		SerializeBlock(block),

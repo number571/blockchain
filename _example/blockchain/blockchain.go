@@ -23,7 +23,6 @@ import (
 )
 
 type BlockChain struct {
- index uint64
  DB    *sql.DB
 }
 
@@ -49,45 +48,6 @@ type Transaction struct {
   CurrHash   []byte
   Signature  []byte
 }
-
-const (
- CREATE_TABLE = `
-CREATE TABLE BlockChain (
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    Hash VARCHAR(44) UNIQUE,
-    Block TEXT
-);
-`
-)
-
-const (
-  GENESIS_BLOCK  = "GENESIS-BLOCK"
-  STORAGE_VALUE  = 100
-  GENESIS_REWARD = 100
-  STORAGE_CHAIN  = "STORAGE-CHAIN"
-)
-
-const (
- DIFFICULTY = 20
-)
-
-const (
- RAND_BYTES = 32
- START_PERCENT = 10
- STORAGE_REWARD = 1
-)
-
-const (
- TXS_LIMIT = 2
-)
-
-const (
- DEBUG = true
-)
-
-const (
- KEY_SIZE = 512
-)
 
 func NewChain(filename, receiver string) error {
  file, err := os.Create(filename)
@@ -116,12 +76,32 @@ func NewChain(filename, receiver string) error {
  return nil
 }
 
+const (
+ CREATE_TABLE = `
+CREATE TABLE BlockChain (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Hash VARCHAR(44) UNIQUE,
+    Block TEXT
+);
+`
+)
+
+const (
+ GENESIS_BLOCK  = "GENESIS-BLOCK"
+  STORAGE_VALUE  = 100
+  GENESIS_REWARD = 100
+  STORAGE_CHAIN  = "STORAGE-CHAIN"
+)
+
 func (chain *BlockChain) AddBlock(block *Block) {
-  chain.index += 1
   chain.DB.Exec("INSERT INTO BlockChain (Hash, Block) VALUES ($1, $2)",
    Base64Encode(block.CurrHash),
    SerializeBlock(block),
   )
+}
+
+func Base64Encode(data []byte) string {
+ return base64.StdEncoding.EncodeToString(data)
 }
 
 func SerializeBlock(block *Block) string {
@@ -140,15 +120,7 @@ func LoadChain(filename string) *BlockChain {
  chain := &BlockChain{
   DB: db,
  }
- chain.index = chain.Size()
  return chain
-}
-
-func (chain *BlockChain) Size() uint64 {
- var index uint64
- row := chain.DB.QueryRow("SELECT Id FROM BlockChain ORDER BY Id DESC")
- row.Scan(&index)
- return index
 }
 
 func NewBlock(miner string, prevHash []byte) *Block {
@@ -159,6 +131,10 @@ func NewBlock(miner string, prevHash []byte) *Block {
   Mapping:    make(map[string]uint64),
  }
 }
+
+const (
+ DIFFICULTY = 20
+)
 
 func NewTransaction(user *User, lasthash []byte, to string, value uint64) *Transaction {
  tx := &Transaction{
@@ -188,6 +164,12 @@ func GenerateRandomBytes(max uint) []byte {
  }
  return slice
 }
+
+const (
+ RAND_BYTES = 32
+ START_PERCENT = 10
+ STORAGE_REWARD = 1
+)
 
 func (user *User) Address() string {
  return StringPublic(user.Public())
@@ -245,10 +227,6 @@ func Sign(priv *rsa.PrivateKey, data []byte) []byte {
  return signature
 }
 
-func Base64Encode(data []byte) string {
- return base64.StdEncoding.EncodeToString(data)
-}
-
 func (block *Block) AddTransaction(chain *BlockChain, tx *Transaction) error {
  if tx == nil {
   return errors.New("tx is null")
@@ -256,18 +234,21 @@ func (block *Block) AddTransaction(chain *BlockChain, tx *Transaction) error {
  if tx.Value == 0 {
   return errors.New("tx value = 0")
  }
- if len(block.Transactions) == TXS_LIMIT && tx.Sender != STORAGE_CHAIN {
+ if tx.Sender != STORAGE_CHAIN && len(block.Transactions) == TXS_LIMIT {
   return errors.New("len tx = limit")
+ }
+ if tx.Sender != STORAGE_CHAIN && tx.Value > START_PERCENT && tx.ToStorage != STORAGE_REWARD {
+  return errors.New("storage reward pass")
+ }
+ if !bytes.Equal(tx.PrevBlock, chain.LastHash()) {
+  return errors.New("prev block in tx /= last hash in chain")
  }
  var balanceInChain uint64
  balanceInTX := tx.Value + tx.ToStorage
  if value, ok := block.Mapping[tx.Sender]; ok {
   balanceInChain = value
  } else {
-  balanceInChain = chain.Balance(tx.Sender)
- }
- if tx.Value > START_PERCENT && tx.ToStorage != STORAGE_REWARD {
-  return errors.New("storage reward pass")
+  balanceInChain = chain.Balance(tx.Sender, chain.Size())
  }
  if balanceInTX > balanceInChain {
   return errors.New("insufficient funds")
@@ -279,14 +260,17 @@ func (block *Block) AddTransaction(chain *BlockChain, tx *Transaction) error {
  return nil
 }
 
-func (chain *BlockChain) Balance(address string) uint64 {
+const (
+ TXS_LIMIT = 2
+)
+
+func (chain *BlockChain) Balance(address string, size uint64) uint64 {
  var (
   sblock  string
   block   *Block
   balance uint64
  )
- rows, err := chain.DB.Query("SELECT Block FROM BlockChain WHERE Id <= $1 ORDER BY Id DESC", 
-  chain.index)
+ rows, err := chain.DB.Query("SELECT Block FROM BlockChain WHERE Id <= $1 ORDER BY Id DESC", size)
  if err != nil {
   return balance
  }
@@ -307,9 +291,16 @@ func (block *Block) addBalance(chain *BlockChain, receiver string, value uint64)
  if v, ok := block.Mapping[receiver]; ok {
   balanceInChain = v
  } else {
-  balanceInChain = chain.Balance(receiver)
+  balanceInChain = chain.Balance(receiver, chain.Size())
  }
  block.Mapping[receiver] = balanceInChain + value
+}
+
+func (chain *BlockChain) Size() uint64 {
+ var size uint64
+ row := chain.DB.QueryRow("SELECT Id FROM BlockChain ORDER BY Id DESC")
+ row.Scan(&size)
+ return size
 }
 
 func DeserializeBlock(data string) *Block {
@@ -322,11 +313,12 @@ func DeserializeBlock(data string) *Block {
 }
 
 func (block *Block) Accept(chain *BlockChain, user *User, ch chan bool) error {
- if !block.transactionsIsValid(chain) {
+ if !block.transactionsIsValid(chain, chain.Size()) {
   return errors.New("transactions is not valid")
  }
  block.AddTransaction(chain, &Transaction{
   RandBytes: GenerateRandomBytes(RAND_BYTES),
+  PrevBlock: chain.LastHash(),
   Sender:    STORAGE_CHAIN,
   Receiver:  user.Address(),
   Value:     STORAGE_REWARD,
@@ -338,7 +330,7 @@ func (block *Block) Accept(chain *BlockChain, user *User, ch chan bool) error {
  return nil
 }
 
-func (block *Block) transactionsIsValid(chain *BlockChain) bool {
+func (block *Block) transactionsIsValid(chain *BlockChain, size uint64) bool {
  lentxs := len(block.Transactions)
  plusStorage := 0
  for i := 0; i < lentxs; i++ {
@@ -375,10 +367,10 @@ func (block *Block) transactionsIsValid(chain *BlockChain) bool {
     return false
    }
   }
-  if !block.balanceIsValid(chain, tx.Sender) {
+  if !block.balanceIsValid(chain, tx.Sender, size) {
    return false
   }
-  if !block.balanceIsValid(chain, tx.Receiver) {
+  if !block.balanceIsValid(chain, tx.Receiver, size) {
    return false
   }
  }
@@ -439,12 +431,12 @@ func (tx *Transaction) signIsValid() bool {
  return Verify(ParsePublic(tx.Sender), tx.CurrHash, tx.Signature) == nil
 }
 
-func (block *Block) balanceIsValid(chain *BlockChain, address string) bool {
+func (block *Block) balanceIsValid(chain *BlockChain, address string, size uint64) bool {
  if _, ok := block.Mapping[address]; !ok {
   return false
  }
  lentxs := len(block.Transactions)
- balanceInChain := chain.Balance(address)
+ balanceInChain := chain.Balance(address, size)
  balanceSubBlock := uint64(0)
  balanceAddBlock := uint64(0)
  for j := 0; j < lentxs; j++ {
@@ -516,6 +508,10 @@ func ParsePublic(pubData string) *rsa.PublicKey {
  return pub
 }
 
+const (
+ DEBUG = true
+)
+
 func init() {
   mrand.Seed(time.Now().UnixNano())
 }
@@ -541,11 +537,11 @@ func StringPrivate(priv *rsa.PrivateKey) string {
 }
 
 func ParsePrivate(privData string) *rsa.PrivateKey {
- pub, err := x509.ParsePKCS1PrivateKey(Base64Decode(privData))
+ priv , err := x509.ParsePKCS1PrivateKey(Base64Decode(privData))
  if err != nil {
   return nil
  }
- return pub
+ return priv 
 }
 
 func NewUser() *User {
@@ -575,13 +571,13 @@ func (chain *BlockChain) LastHash() []byte {
  return Base64Decode(hash)
 }
 
-func (block *Block) IsValid(chain *BlockChain) bool {
+func (block *Block) IsValid(chain *BlockChain, size uint64) bool {
  switch {
  case block == nil:
   return false
  case block.Difficulty != DIFFICULTY:
   return false
- case !block.hashIsValid(chain, chain.Size()):
+ case !block.hashIsValid(chain, size):
   return false
  case !block.signIsValid():
   return false
@@ -589,9 +585,9 @@ func (block *Block) IsValid(chain *BlockChain) bool {
   return false
  case !block.mappingIsValid():
   return false
- case !block.timeIsValid(chain, chain.Size()):
+ case !block.timeIsValid(chain):
   return false
- case !block.transactionsIsValid(chain):
+ case !block.transactionsIsValid(chain, size):
   return false
  }
  return true
@@ -614,7 +610,11 @@ func DeserializeTX(data string) *Transaction {
  return &tx
 }
 
-func (block *Block) hashIsValid(chain *BlockChain, index uint64) bool {
+const (
+ KEY_SIZE = 512
+)
+
+func (block *Block) hashIsValid(chain *BlockChain, size uint64) bool {
  if !bytes.Equal(block.hash(), block.CurrHash) {
   return false
  }
@@ -622,7 +622,7 @@ func (block *Block) hashIsValid(chain *BlockChain, index uint64) bool {
  row := chain.DB.QueryRow("SELECT Id FROM BlockChain WHERE Hash=$1", 
   Base64Encode(block.PrevHash))
  row.Scan(&id)
- return id == index
+ return id == size 
 }
 
 func (block *Block) signIsValid() bool {
@@ -666,7 +666,7 @@ func (block *Block) mappingIsValid() bool {
  return true
 }
 
-func (block *Block) timeIsValid(chain *BlockChain, index uint64) bool {
+func (block *Block) timeIsValid(chain *BlockChain) bool {
  btime, err := time.Parse(time.RFC3339, block.TimeStamp)
  if err != nil {
   return false
@@ -690,3 +690,4 @@ func (block *Block) timeIsValid(chain *BlockChain, index uint64) bool {
  result := btime.Sub(ltime)
  return result > 0
 }
+

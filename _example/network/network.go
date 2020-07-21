@@ -18,7 +18,6 @@ func Send(address string, pack *Package) *Package {
   return nil
  }
  conn.Write([]byte(SerializePackage(pack) + ENDBYTES))
- defer conn.Close()
  var res = new(Package)
  ch := make(chan bool)
 go func() {

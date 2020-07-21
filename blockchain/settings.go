@@ -35,7 +35,6 @@ const (
 )
 
 type BlockChain struct {
-	index uint64
 	DB    *sql.DB
 }
 

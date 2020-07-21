@@ -169,7 +169,7 @@ func chainPrint() {
    Option: GET_BLOCK,
    Data:   fmt.Sprintf("%d", i),
   })
-  if res == nil || res.Data == "" {
+  if res == nil || res.Data == ""{
    break
   }
   fmt.Printf("[%d] => %s\n", i+1, res.Data)
@@ -241,3 +241,4 @@ const (
 func main() {
  handleClient()
 }
+

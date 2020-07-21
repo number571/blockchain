@@ -199,7 +199,7 @@ func addBlock(pack *nt.Package) string {
   return "fail"
  }
  block := bc.DeserializeBlock(splited[2])
- if !block.IsValid(Chain) {
+ if !block.IsValid(Chain, Chain.Size()) {
   currSize := Chain.Size()
   num, err := strconv.Atoi(splited[1])
   if err != nil {
@@ -270,7 +270,7 @@ func getLastHash(pack *nt.Package) string {
 }
 
 func getBalance(pack *nt.Package) string {
- return fmt.Sprintf("%d", Chain.Balance(pack.Data))
+ return fmt.Sprintf("%d", Chain.Balance(pack.Data, Chain.Size()))
 }
 
 const (
@@ -282,11 +282,11 @@ var (
  BreakMining = make(chan bool)
 )
 
-func compareChains(address string, num uint64) string {
+func compareChains(address string, num uint64) {
  filename := "temp_" + hex.EncodeToString(bc.GenerateRandomBytes(8))
  file, err := os.Create(filename)
  if err != nil {
-  return "fail"
+  return
  }
  file.Close()
  defer func() {
@@ -297,15 +297,15 @@ func compareChains(address string, num uint64) string {
   Data:   fmt.Sprintf("%d", 0),
  })
  if res == nil {
-  return "fail"
+  return
  }
  genesis := bc.DeserializeBlock(res.Data)
  if genesis == nil {
-  return "fail"
+  return
  }
  db, err := sql.Open("sqlite3", filename)
  if err != nil {
-  return "fail"
+  return
  }
  defer db.Close()
  _, err = db.Exec(bc.CREATE_TABLE)
@@ -313,23 +313,20 @@ func compareChains(address string, num uint64) string {
   DB: db,
  }
  chain.AddBlock(genesis)
- defer func() {
-  chain.DB.Close()
- }()
  for i := uint64(1); i < num; i++ {
   res := nt.Send(address, &nt.Package{
    Option: GET_BLOCK,
    Data:   fmt.Sprintf("%d", i),
   })
   if res == nil {
-   return "fail"
+   return
   }
   block := bc.DeserializeBlock(res.Data)
   if block == nil {
-   return "fail"
+   return
   }
-  if !block.IsValid(chain) {
-   return "fail"
+  if !block.IsValid(chain, i) {
+   return
   }
   chain.AddBlock(block)
  }
@@ -344,7 +341,6 @@ func compareChains(address string, num uint64) string {
   BreakMining <- true
   IsMining = false
  }
- return "ok"
 }
 
 var (
@@ -388,3 +384,4 @@ func copyFile(src, dst string) error {
  }
  return out.Close()
 }
+
