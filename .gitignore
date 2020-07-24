@@ -2,6 +2,7 @@ mainbc
 mainnt
 node
 client
+gclient
 node1.key
 node2.key
 chain1.db

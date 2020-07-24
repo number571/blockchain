@@ -225,6 +225,9 @@ func printBalance(useraddr string) {
    Option: GET_BLNCE,
    Data:   useraddr,
   })
+  if res == nil {
+    continue
+  }
   fmt.Printf("Balance (%s): %s coins\n", addr, res.Data)
  }
  fmt.Println()

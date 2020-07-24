@@ -1,0 +1,11 @@
+{{define "title"}}
+	Block
+{{end}}
+
+{{define "content"}}
+	{{ if .Error }}
+		Error: {{ .Error }}
+	{{ else }}
+		<pre>{{ .Block }}</pre>
+	{{ end }}
+{{end}}

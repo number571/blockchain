@@ -20,6 +20,7 @@ const (
 	GET_BLOCK       
 	GET_LHASH    
 	GET_BLNCE   
+	GET_CSIZE
 )
 
 func userNew(filename string) *bc.User {

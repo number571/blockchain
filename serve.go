@@ -30,10 +30,15 @@ var (
 
 func handleServer(conn nt.Conn, pack *nt.Package) {
 	nt.Handle(ADD_BLOCK, conn, pack, addBlock)
+	nt.Handle(ADD_TRNSX, conn, pack, addTransaction)
 	nt.Handle(GET_BLOCK, conn, pack, getBlock)
 	nt.Handle(GET_LHASH, conn, pack, getLastHash)
 	nt.Handle(GET_BLNCE, conn, pack, getBalance)
-	nt.Handle(ADD_TRNSX, conn, pack, addTransaction)
+	nt.Handle(GET_CSIZE, conn, pack, getChainSize)
+}
+
+func getChainSize(pack *nt.Package) string {
+	return fmt.Sprintf("%d", Chain.Size())
 }
 
 func addBlock(pack *nt.Package) string {
