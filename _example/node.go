@@ -64,6 +64,7 @@ const (
  GET_BLOCK       
  GET_LHASH    
  GET_BLNCE   
+ GET_CSIZE
 )
 
 func init() {
@@ -191,6 +192,7 @@ func handleServer(conn nt.Conn, pack *nt.Package) {
  nt.Handle(GET_BLOCK, conn, pack, getBlock)
  nt.Handle(GET_LHASH, conn, pack, getLastHash)
  nt.Handle(GET_BLNCE, conn, pack, getBalance)
+ nt.Handle(GET_CSIZE, conn, pack, getChainSize)
 }
 
 func addBlock(pack *nt.Package) string {
@@ -271,6 +273,10 @@ func getLastHash(pack *nt.Package) string {
 
 func getBalance(pack *nt.Package) string {
  return fmt.Sprintf("%d", Chain.Balance(pack.Data, Chain.Size()))
+}
+
+func getChainSize(pack *nt.Package) string {
+ return fmt.Sprintf("%d", Chain.Size())
 }
 
 const (

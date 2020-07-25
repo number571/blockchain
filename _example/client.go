@@ -125,6 +125,8 @@ func handleClient() {
     userPurse()
    case "balance":
     userBalance()
+   default:
+    fmt.Println("command undefined\n")
    }
   case "/chain":
    if len(splited) < 2 {
@@ -138,6 +140,12 @@ func handleClient() {
     chainTX(splited[1:])
    case "balance":
     chainBalance(splited[1:])
+   case "block":
+    chainBlock(splited[1:])
+   case "size":
+    chainSize()
+   default:
+    fmt.Println("command undefined\n")
    }
   default:
    fmt.Println("command undefined\n")
@@ -219,6 +227,38 @@ func chainBalance(splited []string) {
  printBalance(splited[1])
 }
 
+func chainBlock(splited []string) {
+ if len(splited) != 2 {
+  fmt.Println("failed: len(splited) != 2\n")
+  return
+ }
+ num, err := strconv.Atoi(splited[1])
+ if err != nil {
+  fmt.Println("failed: strconv.Atoi(num)\n")
+  return
+ }
+ res := nt.Send(Addresses[0], &nt.Package{
+  Option: GET_BLOCK,
+  Data:   fmt.Sprintf("%d", num-1),
+ })
+ if res == nil || res.Data == "" {
+  fmt.Println("failed: getBlock\n")
+  return
+ }
+ fmt.Printf("[%d] => %s\n", num, res.Data)
+} 
+
+func chainSize() {
+ res := nt.Send(Addresses[0], &nt.Package{
+  Option: GET_CSIZE,
+ })
+ if res == nil || res.Data == "" {
+  fmt.Println("failed: getSize\n")
+  return
+ }
+ fmt.Printf("Size: %s blocks\n\n", res.Data)
+}
+
 func printBalance(useraddr string) {
  for _, addr := range Addresses {
   res := nt.Send(addr, &nt.Package{
@@ -226,7 +266,7 @@ func printBalance(useraddr string) {
    Data:   useraddr,
   })
   if res == nil {
-    continue
+   continue
   }
   fmt.Printf("Balance (%s): %s coins\n", addr, res.Data)
  }
@@ -239,6 +279,7 @@ const (
  GET_BLOCK       
  GET_LHASH    
  GET_BLNCE   
+ GET_CSIZE
 )
 
 func main() {

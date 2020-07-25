@@ -90,6 +90,8 @@ func handleClient() {
 				userPurse()
 			case "balance":
 				userBalance()
+			default:
+    			fmt.Println("command undefined\n")
 			}
 		case "/chain":
 			if len(splited) < 2 {
@@ -107,6 +109,8 @@ func handleClient() {
 				chainBlock(splited[1:])
 			case "size":
 				chainSize()
+			default:
+    			fmt.Println("command undefined\n")
 			}
 		default:
 			fmt.Println("command undefined\n")
@@ -122,7 +126,7 @@ func chainSize() {
 		fmt.Println("failed: getSize\n")
 		return
 	}
-	fmt.Println("Size:", res.Data, "\n")
+	fmt.Printf("Size: %s blocks\n\n", res.Data)
 }
 
 func chainBlock(splited []string) {
@@ -137,7 +141,7 @@ func chainBlock(splited []string) {
 	}
 	res := nt.Send(Addresses[0], &nt.Package{
 		Option: GET_BLOCK,
-		Data:   fmt.Sprintf("%d", num),
+		Data:   fmt.Sprintf("%d", num-1),
 	})
 	if res == nil || res.Data == "" {
 		fmt.Println("failed: getBlock\n")
@@ -231,5 +235,5 @@ func userBalance() {
 func inputString(begin string) string {
 	fmt.Print(begin)
 	msg, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-	return strings.Replace(msg, "\r\n", "", 1)
+	return strings.Replace(msg, "\n", "", 1)
 }
