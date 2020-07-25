@@ -103,12 +103,48 @@ func handleClient() {
 				chainTX(splited[1:])
 			case "balance":
 				chainBalance(splited[1:])
+			case "block":
+				chainBlock(splited[1:])
+			case "size":
+				chainSize()
 			}
 		default:
 			fmt.Println("command undefined\n")
 		}
 	}
 }
+
+func chainSize() {
+	res := nt.Send(Addresses[0], &nt.Package{
+		Option: GET_CSIZE,
+	})
+	if res == nil || res.Data == "" {
+		fmt.Println("failed: getSize\n")
+		return
+	}
+	fmt.Println("Size:", res.Data, "\n")
+}
+
+func chainBlock(splited []string) {
+	if len(splited) != 2 {
+		fmt.Println("failed: len(splited) != 2\n")
+		return
+	}
+	num, err := strconv.Atoi(splited[1])
+	if err != nil {
+		fmt.Println("failed: strconv.Atoi(num)\n")
+		return
+	}
+	res := nt.Send(Addresses[0], &nt.Package{
+		Option: GET_BLOCK,
+		Data:   fmt.Sprintf("%d", num),
+	})
+	if res == nil || res.Data == "" {
+		fmt.Println("failed: getBlock\n")
+		return
+	}
+	fmt.Printf("[%d] => %s\n", num, res.Data)
+} 
 
 func chainPrint() {
 	for i := 0; ; i++ {
@@ -195,5 +231,5 @@ func userBalance() {
 func inputString(begin string) string {
 	fmt.Print(begin)
 	msg, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-	return strings.Replace(msg, "\n", "", 1)
+	return strings.Replace(msg, "\r\n", "", 1)
 }

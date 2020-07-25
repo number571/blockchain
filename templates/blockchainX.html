@@ -6,6 +6,89 @@
 	{{ if .Error }}
 		Error: {{ .Error }}
 	{{ else }}
-		<pre>{{ .Block }}</pre>
+		<table border="1">
+			<tr>
+				<th>Nonce</th>
+				<td width="100%">{{ .Block.Nonce }}</td>
+			</tr>
+			<tr>
+				<th>Difficulty</th>
+				<td width="100%">{{ .Block.Difficulty }}</td>
+			</tr>
+			<tr>
+				<th>CurrHash</th>
+				<td width="100%">{{ .Block.CurrHash }}</td>
+			</tr>
+			<tr>
+				<th>PrevHash</th>
+				<td width="100%">{{ .Block.PrevHash }}</td>
+			</tr>
+			<tr>
+				<th>Miner</th>
+				<td width="100%">{{ .Block.Miner }}</td>
+			</tr>
+			<tr>
+				<th>Signature</th>
+				<td width="100%">{{ .Block.Signature }}</td>
+			</tr>
+			<tr>
+				<th>TimeStamp</th>
+				<td width="100%">{{ .Block.TimeStamp }}</td>
+			</tr>
+			<tr>
+				<th>Transactions</th>
+				<td>
+					{{ range .Block.Transactions }}
+						<table border="1">
+							<tr>
+								<th>RandBytes</th>
+								<td width="100%">{{ .RandBytes }}</td>
+							</tr>
+							<tr>
+								<th>PrevBlock</th>
+								<td width="100%">{{ .PrevBlock }}</td>
+							</tr>
+							<tr>
+								<th>Sender</th>
+								<td width="100%">{{ .Sender }}</td>
+							</tr>
+							<tr>
+								<th>Receiver</th>
+								<td width="100%">{{ .Receiver }}</td>
+							</tr>
+							<tr>
+								<th>Value</th>
+								<td width="100%">{{ .Value }}</td>
+							</tr>
+							<tr>
+								<th>ToStorage</th>
+								<td width="100%">{{ .ToStorage }}</td>
+							</tr>
+							<tr>
+								<th>CurrHash</th>
+								<td width="100%">{{ .CurrHash }}</td>
+							</tr>
+							<tr>
+								<th>Signature</th>
+								<td width="100%">{{ .Signature }}</td>
+							</tr>
+						</table>
+					{{ end }}
+				</td>
+			</tr>
+			<tr>
+				<th>Mapping</th>
+				<td>
+					{{ range $k, $e := .Block.Mapping }}
+						<table border="1">
+							<tr>
+								<th width="100%">{{ $k }}</th>
+								<td>{{ $e }}</td>
+							</tr>
+						</table>
+					{{ end }}
+				</td>
+			</tr>
+		</table>
 	{{ end }}
 {{end}}

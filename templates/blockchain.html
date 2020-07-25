@@ -9,8 +9,8 @@
 		        <form method="POST" action="/blockchain">
 		        	<div class="form-group">
 			        	{{ if .Address }}
-			        		<input disabled class="form-control bg-light" type="text" name="coins" value="{{ .Address }}">
-							<input disabled class="form-control bg-light" type="text" name="coins" value="{{ .Balance }} coins">
+			        		<input disabled class="form-control bg-light" type="text" name="coins" value="Address: {{ .Address }};">
+							<input disabled class="form-control bg-light" type="text" name="coins" value="Balance: {{ .Balance }} coins;">
 						{{ end }}
 					</div>
 		            <div class="form-group">

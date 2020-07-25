@@ -251,7 +251,7 @@ func blockchainXPage(w http.ResponseWriter, r *http.Request) {
 	}
 	var data struct{
 		Error string
-		Block string
+		Block *bc.Block
 		User *bc.User
 	}
 	data.User = User
@@ -264,6 +264,11 @@ func blockchainXPage(w http.ResponseWriter, r *http.Request) {
 		t.Execute(w, data)
 		return 
 	}
-	data.Block = res.Data
+	data.Block = bc.DeserializeBlock(res.Data)
+	if data.Block == nil {
+		data.Error = "Block is nil"
+		t.Execute(w, data)
+		return 
+	}
 	t.Execute(w, data)
 }
