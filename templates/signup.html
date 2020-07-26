@@ -1,20 +1,20 @@
 {{define "title"}}
-	Signup
+    Signup
 {{end}}
 
 {{define "content"}}
-	<div class="col-md-8 mx-auto">
+    <div class="col-md-8 mx-auto">
         <div class="jumbotron">
-			<div class="col-10 mx-auto">
-		        <form method="POST" action="/signup">
-		            <div class="form-group">
-		            	{{ if .PrivateKey }}
-							<input readonly type="text" class="form-control bg-light" value="{{ .PrivateKey }}" id="private">
-						{{ end }}
-		            </div>
-		            <input type="submit" class="btn btn-success w-100" name="generate" value="Generate Private Key">
-		        </form>
-			</div>
-		</div>
-	</div>
+            <div class="col-10 mx-auto">
+                <form method="POST" action="/signup">
+                    <div class="form-group">
+                        {{ if .PrivateKey }}
+                            <input readonly type="text" class="form-control bg-light" value="{{ .PrivateKey }}" id="private">
+                        {{ end }}
+                    </div>
+                    <input type="submit" class="btn btn-success w-100" name="generate" value="Generate Private Key">
+                </form>
+            </div>
+        </div>
+    </div>
 {{end}}

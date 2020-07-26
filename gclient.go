@@ -180,6 +180,7 @@ func transactionPage(w http.ResponseWriter, r *http.Request) {
 			t.Execute(w, data)
 			return
 		}
+		flag := false 
 		for _, addr := range Addresses {
 			res := nt.Send(addr, &nt.Package{
 				Option: GET_LHASH,
@@ -192,6 +193,15 @@ func transactionPage(w http.ResponseWriter, r *http.Request) {
 				Option: ADD_TRNSX,
 				Data:   bc.SerializeTX(tx),
 			})
+			if res == nil || res.Data != "ok" {
+				continue
+			}
+			flag = true
+		}
+		if !flag {
+			data.Error = "TX failed"
+		} else {
+			data.Error = "TX success"
 		}
 	}
 	t.Execute(w, data)
