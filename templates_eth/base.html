@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>
+        {{block "title" .}}
+            Title
+        {{end}}
+    </title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div class="container">
+                <a href="/" class="navbar-brand" exact><h4>Home</h4></a>
+                <div class="navbar-collapse">
+                    <ul class="navbar-nav">
+                        <a href="/blockchain" class="nav-link"><h5>Blockchain</h5></a>
+                    </ul>
+                    <ul class="navbar-nav ml-auto">
+                        {{ if (not .User) }}
+                            <!-- <a href="/signup" class="nav-link"><h5>Signup</h5></a> -->
+                            <a href="/login" class="nav-link"><h5>Login</h5></a>
+                        {{ else }}
+                            <!-- <a href="/transaction" class="nav-link"><h5>Transaction</h5></a> -->
+                            <a href="/account" class="nav-link"><h5>Account</h5></a>
+                            <a href="/logout" class="nav-link"><h5>Logout</h5></a>
+                        {{ end }}
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="col-md-9 mx-auto">
+            {{block "content" .}}
+                Content
+            {{end}}
+        </div>
+    </main>
+</body>
+</html>

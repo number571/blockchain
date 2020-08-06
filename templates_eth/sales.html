@@ -1,0 +1,32 @@
+{{define "title"}}
+    Sales
+{{end}}
+
+{{define "content"}}
+    <div class="jumbotron">
+        <div class="col-12 mx-auto">
+            <form method="POST" action="/blockchain/sales">
+                <div class="form-group">
+                    {{ if .Address }}
+                        <input readonly class="form-control bg-light" type="text" name="coins" value="Address: {{ .Address }}">
+                    {{ end }}
+                </div>
+                <div class="form-group">
+                    <input type="text" class="form-control" name="address" placeholder="Address">
+                </div>
+                <input type="submit" class="btn btn-success w-100" name="submit" value="Get sales">
+            </form>
+        </div>
+    </div>
+    <div class="jumbotron">
+        {{ if .Error }}
+            <p>{{ .Error }}</p>
+        {{ else }}
+            {{ range $i, $e := .Blocks }}
+                <div class="card">
+                    <a class="btn btn-info" href="/blockchain/sales/{{$e}}">[Sales {{ $e }}]</a>
+                </div>
+            {{ end }}
+        {{ end }}
+    </div>
+{{end}}

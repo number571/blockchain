@@ -1,0 +1,18 @@
+{{define "title"}}
+    Account
+{{end}}
+
+{{define "content"}}
+    <div class="jumbotron">
+        <div class="col-12 mx-auto">
+            <form>
+                <div class="form-group">
+                    <input id="address" readonly class="form-control bg-light" type="text" name="coins" value="Address: {{ .Address }}">
+                </div>
+                <div class="form-group">
+                    <input readonly class="form-control bg-light" type="text" name="coins" value="Balance: {{ if .Balance }} {{ .Balance }} {{ else }} 0 {{ end }} coins;">
+                </div>
+            </form>
+        </div>
+    </div>
+{{end}}

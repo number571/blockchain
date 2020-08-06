@@ -1,0 +1,45 @@
+{{define "title"}}
+    Chain
+{{end}}
+
+{{define "content"}}
+    {{ if .Error }} 
+        <div class="jumbotron">
+            <p>{{ .Error }}</p>
+        </div>
+    {{ end }}
+    
+    {{ if .IsAdmin }}
+        <div class="jumbotron">
+            <div class="col-10 mx-auto">
+                <form method="POST" action="/blockchain">
+                    <div class="form-group">
+                        <input class="form-control" type="text" name="info" placeholder="Information">
+                    </div>
+                     <div class="form-group">
+                        <input class="form-control" type="number" name="squere" placeholder="Squere">
+                    </div>
+                     <div class="form-group">
+                        <input class="form-control" type="number" name="usefulsquere" placeholder="Userful Squere">
+                    </div>
+                    <input type="submit" class="btn btn-success w-100" name="submit" value="Create">
+                </form>
+            </div>
+        </div>
+    {{ end }}
+        
+    <div class="jumbotron">
+        <div class="card">
+            <a class="btn btn-info" href="/blockchain/estates">Estates</a>
+        </div>
+        <div class="card">
+            <a class="btn btn-info" href="/blockchain/presents">Presents</a>
+        </div>
+        <div class="card">
+            <a class="btn btn-info" href="/blockchain/sales">Sales</a>
+        </div>
+        <div class="card">
+            <a class="btn btn-info" href="/blockchain/rents">Rents</a>
+        </div>
+    </div>
+{{end}}

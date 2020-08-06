@@ -1,0 +1,22 @@
+{{define "title"}}
+    Login
+{{end}}
+
+{{define "content"}}
+    {{ if .Error }}
+        <div class="jumbotron">
+            <p>{{ .Error }}</p>
+        </div>
+    {{ else }}
+        <div class="jumbotron">
+            <div class="col-10 mx-auto">
+                <form method="POST" action="/login">
+                    <div class="form-group">
+                        <input type="password" class="form-control" name="private" placeholder="Private Key">
+                    </div>
+                    <input type="submit" class="btn btn-success w-100" name="login" value="Login">
+                </form>
+            </div>
+        </div>
+    {{ end }}
+{{end}}

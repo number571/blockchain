@@ -1,0 +1,52 @@
+{{define "title"}}
+    Present
+{{end}}
+
+{{define "content"}}
+    {{ if .Error }}
+        <div class="jumbotron">
+            <p>{{ .Error }}</p>
+        </div>
+    {{ else }}
+        {{ if (eq .Block.AddressFrom .User.AddressHex )}}
+            <div class="jumbotron">
+                <div class="col-10 mx-auto">
+                    <form method="POST" action="/blockchain/presents/{{ .Block.Id }}">
+                        <input type="submit" class="btn btn-success w-100" name="cancel" value="Cancel">
+                    </form>
+                </div>
+            </div>
+        {{ end }}
+        {{ if (eq .Block.AddressTo .User.AddressHex )}}
+            <div class="jumbotron">
+                <div class="col-10 mx-auto">
+                    <form method="POST" action="/blockchain/presents/{{ .Block.Id }}">
+                        <input type="submit" class="btn btn-success w-100" name="confirm" value="Confirm">
+                    </form>
+                </div>
+            </div>
+        {{ end }}
+    	<table border="1">
+    		<tr>
+                <th>Id</th>
+                <td width="100%">{{ .Block.Id }}</td>
+            </tr>
+            <tr>
+                <th>EstateId</th>
+                <td width="100%">{{ .Block.EstateId }}</td>
+            </tr>
+            <tr>
+                <th>AddressFrom</th>
+                <td width="100%">{{ .Block.AddressFrom }}</td>
+            </tr>
+            <tr>
+                <th>AddressTo</th>
+                <td width="100%">{{ .Block.AddressTo }}</td>
+            </tr>
+            <tr>
+                <th>Finished</th>
+                <td width="100%">{{ .Block.Finished }}</td>
+            </tr>
+    	</table>
+    {{ end }}
+{{end}}

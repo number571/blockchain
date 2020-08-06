@@ -1,0 +1,63 @@
+{{define "title"}}
+    Estate
+{{end}}
+
+{{define "content"}}
+    {{ if .Error }}
+        <div class="jumbotron">
+            <p>{{ .Error }}</p>
+        </div>
+    {{ else }}
+        {{ if (and (eq .Block.Owner .User.AddressHex) (not .Block.PresentStatus) (not .Block.SaleStatus) (not .Block.RentStatus)) }}
+            <div class="jumbotron">
+                <div class="card">
+                    <a class="btn btn-info" href="/blockchain/presents/do/{{ .Block.Id }}">Do present</a>
+                </div>
+                <div class="card">
+                    <a class="btn btn-info" href="/blockchain/sales/do/{{ .Block.Id }}">Do sales</a>
+                </div>
+                <div class="card">
+                    <a class="btn btn-info" href="/blockchain/rents/do/{{ .Block.Id }}">Do rents</a>
+                </div>
+            </div>
+        {{ end }}
+    	<table border="1">
+    		<tr>
+                <th>Id</th>
+                <td width="100%">{{ .Block.Id }}</td>
+            </tr>
+            <tr>
+                <th>Owner</th>
+                <td width="100%">{{ .Block.Owner }}</td>
+            </tr>
+            <tr>
+                <th>Info</th>
+                <td width="100%">{{ .Block.Info }}</td>
+            </tr>
+            <tr>
+                <th>Squere</th>
+                <td width="100%">{{ .Block.Squere }}</td>
+            </tr>
+            <tr>
+                <th>UsefulSquere</th>
+                <td width="100%">{{ .Block.UsefulSquere }}</td>
+            </tr>
+            <tr>
+                <th>RenterAddress</th>
+                <td width="100%">{{ .Block.RenterAddress }}</td>
+            </tr>
+            <tr>
+                <th>PresentStatus</th>
+                <td width="100%">{{ .Block.PresentStatus }}</td>
+            </tr>
+            <tr>
+                <th>SaleStatus</th>
+                <td width="100%">{{ .Block.SaleStatus }}</td>
+            </tr>
+            <tr>
+                <th>RentStatus</th>
+                <td width="100%">{{ .Block.RentStatus }}</td>
+            </tr>
+    	</table>
+    {{ end }}
+{{end}}

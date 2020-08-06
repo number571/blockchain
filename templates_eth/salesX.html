@@ -1,0 +1,95 @@
+{{define "title"}}
+    Sale
+{{end}}
+
+{{define "content"}}
+    {{ if .Error }}
+        <div class="jumbotron">
+            <p>{{ .Error }}</p>
+        </div>
+    {{ else }}
+        {{ if (eq .Block.Owner .User.AddressHex )}}
+            <div class="jumbotron">
+                <div class="col-10 mx-auto">
+                    <form method="POST" action="/blockchain/sales/{{ .Block.Id }}">
+                        <input type="submit" class="btn btn-success w-100" name="cancel" value="Cancel">
+                    </form>
+                </div>
+            </div>
+            <form id="my_form" method="POST" action="/blockchain/sales/{{ .Block.Id }}">
+            </form>
+        {{ else }}
+            {{ if .InCustomers}}
+                <div class="jumbotron">
+                    <div class="col-10 mx-auto">
+                        <form method="POST" action="/blockchain/sales/{{ .Block.Id }}">
+                            <input type="submit" class="btn btn-success w-100" name="close" value="Close">
+                        </form>
+                    </div>
+                </div>
+            {{ else }}
+                <div class="jumbotron">
+                    <div class="col-10 mx-auto">
+                        <form method="POST" action="/blockchain/sales/{{ .Block.Id }}">
+                            <div class="form-group">
+                                <input type="number" class="form-control" name="price" value="{{ .Block.Price }}">
+                            </div>
+                            <input type="submit" class="btn btn-success w-100" name="buy" value="Buy">
+                        </form>
+                    </div>
+                </div>
+            {{ end }}
+        {{ end }}
+    	<table border="1">
+    		<tr>
+                <th>Id</th>
+                <td width="100%">{{ .Block.Id }}</td>
+            </tr>
+            <tr>
+                <th>EstateId</th>
+                <td width="100%">{{ .Block.EstateId }}</td>
+            </tr>
+            <tr>
+                <th>Owner</th>
+                <td width="100%">{{ .Block.Owner }} - {{ .User.AddressHex }} </td>
+            </tr>
+            <tr>
+                <th>Price</th>
+                <td width="100%">{{ .Block.Price }}</td>
+            </tr>
+            <tr>
+                <th>Customers</th>
+                <td>
+                    {{ $owner := .Block.Owner }}
+                    {{ $useraddr := .User.AddressHex }}
+                    {{ $prices := .Block.Prices }}
+                    {{ range $i, $e := .Block.Customers }}
+                        <table border="1">
+                            <tr>
+                                <th>Customer</th>
+                                <td width="100%">{{ $e }}</td>
+                            </tr>
+                            <tr>
+                                <th>Price</th>
+                                <td width="100%">{{ index $prices $i }}</td>
+                            </tr>
+                            {{ if (eq $owner $useraddr) }}
+                                <tr>
+                                    <th>Confirm</th>
+                                    <td width="100%">
+                                        <input form="my_form" type="hidden" name="addrnum" value="{{ $i }}">
+                                        <input form="my_form" type="submit" class="btn btn-success w-100" name="confirm" value="Confirm">
+                                    </td>
+                                </tr>
+                            {{ end }}
+                        </table>
+                    {{ end }}
+                </td>
+            </tr>
+            <tr>
+                <th>Finished</th>
+                <td width="100%">{{ .Block.Finished }}</td>
+            </tr>
+    	</table>
+    {{ end }}
+{{end}}

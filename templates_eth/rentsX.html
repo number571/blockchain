@@ -1,0 +1,75 @@
+{{define "title"}}
+    Rent
+{{end}}
+
+{{define "content"}}
+    {{ if .Error }}
+        <div class="jumbotron">
+            <p>{{ .Error }}</p>
+        </div>
+    {{ else }}
+        {{ if (eq .Block.Owner .User.AddressHex)}}
+            {{ if (not .Confirmed) }}
+                <div class="jumbotron">
+                    <div class="col-10 mx-auto">
+                        <form method="POST" action="/blockchain/rents/{{ .Block.Id }}">
+                            <input type="submit" class="btn btn-success w-100" name="cancel" value="Cancel">
+                        </form>
+                    </div>
+                </div>
+            {{ else }}
+                <div class="jumbotron">
+                    <div class="col-10 mx-auto">
+                        <form method="POST" action="/blockchain/rents/{{ .Block.Id }}">
+                            <input type="submit" class="btn btn-success w-100" name="finish" value="Finish">
+                        </form>
+                    </div>
+                </div>
+            {{ end}}
+        {{ else }}
+            {{ if (eq .Block.Renter "0x0000000000000000000000000000000000000000")}}
+                <div class="jumbotron">
+                    <div class="col-10 mx-auto">
+                        <form method="POST" action="/blockchain/rents/{{ .Block.Id }}">
+                            <input type="submit" class="btn btn-success w-100" name="confirm" value="Confirm">
+                        </form>
+                    </div>
+                </div>
+            {{ end }}
+        {{ end }}
+    	<table border="1">
+    		<tr>
+                <th>Id</th>
+                <td width="100%">{{ .Block.Id }}</td>
+            </tr>
+            <tr>
+                <th>EstateId</th>
+                <td width="100%">{{ .Block.EstateId }}</td>
+            </tr>
+            <tr>
+                <th>Owner</th>
+                <td width="100%">{{ .Block.Owner }}</td>
+            </tr>
+            <tr>
+                <th>Renter</th>
+                <td width="100%">{{ .Block.Renter }}</td>
+            </tr>
+            <tr>
+                <th>Time</th>
+                <td width="100%">{{ .Block.Time }}</td>
+            </tr>
+            <tr>
+                <th>Money</th>
+                <td width="100%">{{ .Block.Money }}</td>
+            </tr>
+            <tr>
+                <th>DeadLine</th>
+                <td width="100%">{{ .Block.DeadLine }}</td>
+            </tr>
+            <tr>
+                <th>Finished</th>
+                <td width="100%">{{ .Block.Finished }}</td>
+            </tr>
+    	</table>
+    {{ end }}
+{{end}}
