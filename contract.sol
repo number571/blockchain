@@ -48,8 +48,7 @@ contract WorldSkills {
     
     address admin = msg.sender;
     address payable default_address = 0x0000000000000000000000000000000000000000;
-
-    // ADD FUNCTION
+    
     function iam_admin() public view returns(bool) {
         return msg.sender == admin;
     }
@@ -70,9 +69,6 @@ contract WorldSkills {
         return rents.length;
     }
     
-    
-    
-
     function get_estates(uint estate_number) public view returns(uint, address, string memory, uint, uint, address) {
         return(estates[estate_number].estate_id, estates[estate_number].owner, estates[estate_number].info, estates[estate_number].squere, estates[estate_number].useful_squere, estates[estate_number].renter_address);
     }
@@ -110,22 +106,15 @@ contract WorldSkills {
         _;
     }
 
-            //Admin's function
-    // РАБОТАЕТ
-    //Создать объект собственности
     function create_estate(address owner, string memory info, uint squere, uint useful_squere) public is_admin{
         estates.push(Estate(estates.length, owner, info, squere, useful_squere, 0x0000000000000000000000000000000000000000, false, false, false));
     }
-            
-            //Present's functions
-            
-    // Создать предложение подарка
+    
     function create_present(uint estate_id, address address_to) public status_OK(estate_id) is_owner(estate_id) {
         presents.push(Present(estate_id, msg.sender, address_to, false));
         estates[estate_id].present_status = true;
     } 
     
-    // Отменить свой подарок(доступна до принятие подарка адресатом)
     function cancel_present(uint present_number) payable public {
         require(msg.sender == presents[present_number].address_from);
         require(presents[present_number].finished == false);
@@ -134,7 +123,6 @@ contract WorldSkills {
         
     }
     
-    // Принять подарок
     function confirm_present(uint present_number) payable public {
         require(msg.sender == presents[present_number].address_to);
         require(presents[present_number].finished == false);
@@ -144,10 +132,6 @@ contract WorldSkills {
         
     }
     
-    
-            //Sale's functions
-    
-    // Разместить объявление о продаже
     function create_sale(uint estate_id, uint price) public status_OK(estate_id) is_owner(estate_id){
        address payable[] memory customers;
        uint[] memory prices;
@@ -155,7 +139,6 @@ contract WorldSkills {
        estates[estate_id].sale_status = true;
     }
     
-    // Отменить объявление о продаже и вернуть деньги всем, кто успел внести
     function cancel_sale(uint sale_number) public {
         require(msg.sender == sales[sale_number].owner);
         require(sales[sale_number].finished == false);
@@ -167,7 +150,6 @@ contract WorldSkills {
         
     }
     
-    // Выбрать чтобы купить
     function check_to_buy(uint sale_number) public payable {
         require(msg.sender != sales[sale_number].owner);
         require(msg.value >= sales[sale_number].price);
@@ -184,7 +166,6 @@ contract WorldSkills {
         sales[sale_number].prices.push(msg.value);
     }
     
-    // Отменить выбор покупки
     function cancel_to_buy(uint sale_number) public payable {
         require(sales[sale_number].finished == false);
         for (uint i=0; i<sales[sale_number].customers.length; i++){
@@ -195,7 +176,6 @@ contract WorldSkills {
         }
     }
     
-    // Подтвердить продажу и вернуть деньги остальным
     function confirm_sale(uint sale_number, uint sale_to) public payable {
         require(msg.sender == sales[sale_number].owner);
         require(sales[sale_number].prices[sale_to] != 0);
@@ -214,20 +194,15 @@ contract WorldSkills {
         sales[sale_number].finished = true;
     }
 
-            // Rent's function
-    // Создание объявления об аренде
     function create_rent(uint estate_id, uint time, uint money) public is_owner(estate_id) status_OK(estate_id){
         rents.push(Rent(estate_id, msg.sender, default_address, time, money, 0, false));
         estates[estate_id].rent_status=true;
     }
     
-    // Арендовать
     function to_rent(uint rent_id) public payable{
         require(rents[rent_id].finished == false);
         require(rents[rent_id].renter_address == default_address);
         require(rents[rent_id].owner_address != msg.sender);
-        // CHANGE require(rents[rent_id].money != msg.value); 
-        // TO require(rents[rent_id].money == msg.value); 
         require(rents[rent_id].money == msg.value); 
         rents[rent_id].renter_address = msg.sender;
         estates[rents[rent_id].estate_id].renter_address = msg.sender;
@@ -235,7 +210,6 @@ contract WorldSkills {
         rents[rent_id].owner_address.transfer(rents[rent_id].money);
     }
     
-    //Отменить объявление об аренде
     function cancel_rent(uint rent_id) public {
         require(rents[rent_id].finished == false);
         require(rents[rent_id].owner_address == msg.sender);
@@ -244,8 +218,6 @@ contract WorldSkills {
         rents[rent_id].finished = true;
     }
     
-    //Истечение срока аренды
-    // ADD 'is_owner(rents[rent_id].estate_id)''
     function finish_rent(uint rent_id) public is_owner(rents[rent_id].estate_id) { 
         require(rents[rent_id].finished == false);
         require(rents[rent_id].deadline < now);

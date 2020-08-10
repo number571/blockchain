@@ -8,6 +8,7 @@ import (
 	"strings"
 	"math/big"
 	"encoding/json"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
@@ -67,7 +68,7 @@ func main() {
 			case "balance":
 				userBalance()
 			default:
-    			fmt.Println("command undefined\n")
+				fmt.Println("command undefined\n")
 			}
 		case "/chain":
 			if len(splited) < 3 {
@@ -76,22 +77,7 @@ func main() {
 			}
 			switch splited[1] {
 			case "get":
-				switch splited[2] {
-				case "estates":
-					// chain get estates address
-					chainGetEstates(splited[2:])
-				case "presents":
-					// chain get presents address
-					chainGetPresents(splited[2:])
-				case "sales":
-					// chain get sales address
-					chainGetSales(splited[2:])
-				case "rents":
-					// chain get rents address
-					chainGetRents(splited[2:])
-				default:
-					fmt.Println("command undefined\n")
-				}
+				chainGet(splited[2], splited[2:])
 			case "create":
 				switch splited[2] {
 				case "estate":
@@ -110,19 +96,7 @@ func main() {
 					fmt.Println("command undefined\n")
 				}
 			case "cancel":
-				switch splited[2] {
-				case "present":
-					// chain cancel present id_present
-					chainCancelPresent(splited[2:])
-				case "sale":
-					// chain cancel sale id_sale
-					chainCancelSale(splited[2:])
-				case "rent":
-					// chain cancel rent id_rent
-					chainCancelRent(splited[2:])
-				default:
-					fmt.Println("command undefined\n")
-				}
+				chainCancel(splited[2], splited[2:])
 			case "confirm":
 				switch splited[2] {
 				case "present":
@@ -379,74 +353,39 @@ func chainCreateRent(splited []string) {
 	fmt.Println("Tx:", tx.Hash().Hex(), "\n")
 }
 
-func chainCancelPresent(splited []string) {
+func chainCancel(category string, splited []string) {
 	if len(splited) != 2 {
 		fmt.Println("failed: len(splited) != 2\n")
 		return
 	}
 	var (
-		presentNumber = new(big.Int)
+		tx *types.Transaction
+		err error
+		num = new(big.Int)
 		ok bool
 	)
-	presentNumber, ok = presentNumber.SetString(splited[1], 10)
+	num, ok = num.SetString(splited[1], 10)
 	if !ok {
 		fmt.Println("failed: conv(str1) to num\n")
 		return
 	}
-	tx, err := Instance.CancelPresent(
-		resetAuth(User), 
-		presentNumber,
-	)
-	if err != nil {
-		fmt.Println(err, "\n")
-		return
+	switch category {
+	case "present":
+		tx, err = Instance.CancelPresent(
+			resetAuth(User), 
+			num,
+		)
+	case "sale":
+		tx, err = Instance.CancelSale(
+			resetAuth(User), 
+			num,
+		)
+	case "rent":
+		tx, err = Instance.CancelRent(
+			resetAuth(User), 
+			num,
+		)
 	}
-	fmt.Println("Tx:", tx.Hash().Hex(), "\n")
-}
-
-func chainCancelSale(splited []string) {
-	if len(splited) != 2 {
-		fmt.Println("failed: len(splited) != 2\n")
-		return
-	}
-	var (
-		saleNumber = new(big.Int)
-		ok bool
-	)
-	saleNumber, ok = saleNumber.SetString(splited[1], 10)
-	if !ok {
-		fmt.Println("failed: conv(str1) to num\n")
-		return
-	}
-	tx, err := Instance.CancelSale(
-		resetAuth(User), 
-		saleNumber,
-	)
-	if err != nil {
-		fmt.Println(err, "\n")
-		return
-	}
-	fmt.Println("Tx:", tx.Hash().Hex(), "\n")
-}
-
-func chainCancelRent(splited []string) {
-	if len(splited) != 2 {
-		fmt.Println("failed: len(splited) != 2\n")
-		return
-	}
-	var (
-		rentNumber = new(big.Int)
-		ok bool
-	)
-	rentNumber, ok = rentNumber.SetString(splited[1], 10)
-	if !ok {
-		fmt.Println("failed: conv(str1) to num\n")
-		return
-	}
-	tx, err := Instance.CancelRent(
-		resetAuth(User), 
-		rentNumber,
-	)
 	if err != nil {
 		fmt.Println(err, "\n")
 		return
@@ -547,146 +486,109 @@ func chainConfirmRent(splited []string) {
 	fmt.Println("Tx:", tx.Hash().Hex(), "\n")
 }
 
-func chainGetEstates(splited []string) {
+func chainGet(category string, splited []string) {
 	if len(splited) != 2 {
 		fmt.Println("failed: len(splited) != 2\n")
 		return
 	}
-	var inc = big.NewInt(1)
-	estatesnum, err := Instance.GetEstatesNumber(&bind.CallOpts{From: User.AddressEth})
+	var (
+		inc = big.NewInt(1)
+		err error
+		num *big.Int
+		jsonData []byte
+	)
+	switch category {
+	case "estates":
+		num, err = Instance.GetEstatesNumber(&bind.CallOpts{From: User.AddressEth})
+	case "presents":
+		num, err = Instance.GetPresentsNumber(&bind.CallOpts{From: User.AddressEth})
+	case "sales":
+		num, err = Instance.GetSalesNumber(&bind.CallOpts{From: User.AddressEth})
+	case "rents":
+		num, err = Instance.GetRentsNumber(&bind.CallOpts{From: User.AddressEth})
+	default:
+		fmt.Println("undefined category\n")
+		return
+	}
 	if err != nil {
 		fmt.Println(err, "\n")
 		return
 	}
-	for index := big.NewInt(0) ; index.Cmp(estatesnum) == -1; index.Add(index, inc) {
-		data := getEstates(index)
-		if data == nil {
-			fmt.Println("data is nil\n")
+	for index := big.NewInt(0); index.Cmp(num) == -1; index.Add(index, inc) {
+		switch category {
+		case "estates":
+			data := getEstates(index)
+			if data == nil {
+				fmt.Println("data is nil\n")
+				return
+			}
+			if splited[1] == "my" && User.AddressHex != data.Owner.Hex() {
+				continue
+			}
+			if splited[1] != "all" && splited[1] != "my" && 
+				strings.ToLower(splited[1]) != strings.ToLower(data.Owner.Hex()) {
+				continue
+			}
+			jsonData, err = json.MarshalIndent(data, "", "\t")
+		case "presents":
+			data := getPresents(index)
+			if data == nil {
+				fmt.Println("data is nil\n")
+				return
+			}
+			if data.Finished {
+				continue
+			}
+			if splited[1] == "my" && 
+				(User.AddressHex != data.AddressFrom.Hex() && User.AddressHex != data.AddressTo.Hex()){
+				continue
+			}
+			if splited[1] != "all" && splited[1] != "my" && 
+				(strings.ToLower(splited[1]) != strings.ToLower(data.AddressFrom.Hex()) && 
+				strings.ToLower(splited[1]) != strings.ToLower(data.AddressTo.Hex())) {
+				continue
+			}
+			jsonData, err = json.MarshalIndent(data, "", "\t")
+		case "sales":
+			data := getSales(index)
+			if data == nil {
+				fmt.Println("data is nil\n")
+				return
+			}
+			if data.Finished {
+				continue
+			}
+			if splited[1] == "my" && User.AddressHex != data.Owner.Hex() {
+				continue
+			}
+			if splited[1] != "all" && splited[1] != "my" && 
+				strings.ToLower(splited[1]) != strings.ToLower(data.Owner.Hex()) {
+				continue
+			}
+			jsonData, err = json.MarshalIndent(data, "", "\t")
+		case "rents":
+			data := getRents(index)
+			if data == nil {
+				fmt.Println("data is nil\n")
+				return
+			}
+			if data.Finished {
+				continue
+			}
+			if splited[1] == "my" && 
+				(User.AddressHex != data.Owner.Hex() && User.AddressHex != data.Renter.Hex()){
+				continue
+			}
+			if splited[1] != "all" && splited[1] != "my" && 
+				(strings.ToLower(splited[1]) != strings.ToLower(data.Owner.Hex()) && 
+				strings.ToLower(splited[1]) != strings.ToLower(data.Renter.Hex())) {
+				continue
+			}
+			jsonData, err = json.MarshalIndent(data, "", "\t")
+		default:
+			fmt.Println("undefined category\n")
 			return
 		}
-		if splited[1] == "my" && User.AddressHex != data.Owner.Hex() {
-			continue
-		}
-		if splited[1] != "all" && splited[1] != "my" && 
-			strings.ToLower(splited[1]) != strings.ToLower(data.Owner.Hex()) {
-			continue
-		}
-		jsonData, err := json.MarshalIndent(data, "", "\t")
-		if err != nil {
-			fmt.Println(err, "\n")
-			return
-		}
-		fmt.Println(string(jsonData))
-	}
-	fmt.Println()
-}
-
-func chainGetPresents(splited []string) {
-	if len(splited) != 2 {
-		fmt.Println("failed: len(splited) != 2\n")
-		return
-	}
-	var inc = big.NewInt(1)
-	prenetsnum, err := Instance.GetPresentsNumber(&bind.CallOpts{From: User.AddressEth})
-	if err != nil {
-		fmt.Println(err, "\n")
-		return
-	}
-	for index := big.NewInt(0); index.Cmp(prenetsnum) == -1; index.Add(index, inc) {
-		data := getPresents(index)
-		if data == nil {
-			fmt.Println("data is nil\n")
-			return
-		}
-		if data.Finished {
-			continue
-		}
-		if splited[1] == "my" && 
-			(User.AddressHex != data.AddressFrom.Hex() && User.AddressHex != data.AddressTo.Hex()){
-			continue
-		}
-		if splited[1] != "all" && splited[1] != "my" && 
-			(strings.ToLower(splited[1]) != strings.ToLower(data.AddressFrom.Hex()) && 
-			strings.ToLower(splited[1]) != strings.ToLower(data.AddressTo.Hex())) {
-			continue
-		}
-		jsonData, err := json.MarshalIndent(data, "", "\t")
-		if err != nil {
-			fmt.Println(err, "\n")
-			return
-		}
-		fmt.Println(string(jsonData))
-	}
-	fmt.Println()
-}
-
-func chainGetSales(splited []string) {
-	if len(splited) != 2 {
-		fmt.Println("failed: len(splited) != 2\n")
-		return
-	}
-	var inc = big.NewInt(1)
-	salesnum, err := Instance.GetSalesNumber(&bind.CallOpts{From: User.AddressEth})
-	if err != nil {
-		fmt.Println(err, "\n")
-		return
-	}
-	for index := big.NewInt(0); index.Cmp(salesnum) == -1; index.Add(index, inc) {
-		data := getSales(index)
-		if data == nil {
-			fmt.Println("data is nil\n")
-			return
-		}
-		if data.Finished {
-			continue
-		}
-		if splited[1] == "my" && User.AddressHex != data.Owner.Hex() {
-			continue
-		}
-		if splited[1] != "all" && splited[1] != "my" && 
-			strings.ToLower(splited[1]) != strings.ToLower(data.Owner.Hex()) {
-			continue
-		}
-		jsonData, err := json.MarshalIndent(data, "", "\t")
-		if err != nil {
-			fmt.Println(err, "\n")
-			return
-		}
-		fmt.Println(string(jsonData))
-	}
-	fmt.Println()
-}
-
-func chainGetRents(splited []string) {
-	if len(splited) != 2 {
-		fmt.Println("failed: len(splited) != 2\n")
-		return
-	}
-	var inc = big.NewInt(1)
-	rentsnum, err := Instance.GetRentsNumber(&bind.CallOpts{From: User.AddressEth})
-	if err != nil {
-		fmt.Println(err, "\n")
-		return
-	}
-	for index := big.NewInt(0); index.Cmp(rentsnum) == -1; index.Add(index, inc) {
-		data := getRents(index)
-		if data == nil {
-			fmt.Println("data is nil\n")
-			return
-		}
-		if data.Finished {
-			continue
-		}
-		if splited[1] == "my" && 
-			(User.AddressHex != data.Owner.Hex() && User.AddressHex != data.Renter.Hex()){
-			continue
-		}
-		if splited[1] != "all" && splited[1] != "my" && 
-			(strings.ToLower(splited[1]) != strings.ToLower(data.Owner.Hex()) && 
-			strings.ToLower(splited[1]) != strings.ToLower(data.Renter.Hex())) {
-			continue
-		}
-		jsonData, err := json.MarshalIndent(data, "", "\t")
 		if err != nil {
 			fmt.Println(err, "\n")
 			return

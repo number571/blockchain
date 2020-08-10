@@ -64,8 +64,10 @@ type Rent struct {
 var (
 	User *UserType
 	ClientETH     = connectToETH("http://127.0.0.1:5555") 
-	ContractAddr  = common.HexToAddress(readFile("contract.address"))
-	Instance      = newContract(ContractAddr, ClientETH)
+	Instance      = newContract(
+		common.HexToAddress(readFile("contract.address")), 
+		ClientETH,
+	)
 )
 
 func loadUser(purse string) *UserType {
