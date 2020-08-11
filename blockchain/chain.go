@@ -23,13 +23,14 @@ func NewChain(filename, receiver string) error {
 		DB: db,
 	}
 	genesis := &Block{
-		CurrHash:  []byte(GENESIS_BLOCK),
+		PrevHash: []byte(GENESIS_BLOCK),
 		Mapping:   make(map[string]uint64),
 		Miner:     receiver,
 		TimeStamp: time.Now().Format(time.RFC3339),
 	}
 	genesis.Mapping[STORAGE_CHAIN] = STORAGE_VALUE
 	genesis.Mapping[receiver] = GENESIS_REWARD
+	genesis.CurrHash = genesis.hash()
 	chain.AddBlock(genesis)
 	return nil
 }

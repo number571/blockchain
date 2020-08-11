@@ -15,6 +15,7 @@ import (
  "io"
  "strconv"
  "sync"
+ "sort"
 )
 
 func readFile(filename string) string {
@@ -309,6 +310,9 @@ func compareChains(address string, num uint64) {
  if genesis == nil {
   return
  }
+ if !bytes.Equal(genesis.CurrHash, hashBlock(genesis)) {
+  return
+ }
  db, err := sql.Open("sqlite3", filename)
  if err != nil {
   return
@@ -371,6 +375,44 @@ func selectBlock(chain *bc.BlockChain, i int) string {
  row := chain.DB.QueryRow("SELECT Block FROM BlockChain WHERE Id=$1", i+1)
  row.Scan(&block)
  return block
+}
+
+func hashBlock(block *bc.Block) []byte {
+  var tempHash []byte
+  for _, tx := range block.Transactions {
+    tempHash = bc.HashSum(bytes.Join(
+      [][]byte{
+        tempHash,
+        tx.CurrHash,
+      },
+      []byte{},
+    ))
+  }
+  var list []string
+  for hash := range block.Mapping {
+    list = append(list, hash)
+  }
+  sort.Strings(list)
+  for _, hash := range list {
+    tempHash = bc.HashSum(bytes.Join(
+      [][]byte{
+        tempHash,
+        []byte(hash),
+        bc.ToBytes(block.Mapping[hash]),
+      },
+      []byte{},
+    ))
+  }
+  return bc.HashSum(bytes.Join(
+    [][]byte{
+      tempHash,
+      bc.ToBytes(uint64(block.Difficulty)),
+      block.PrevHash,
+      []byte(block.Miner),
+      []byte(block.TimeStamp),
+    },
+    []byte{},
+  ))
 }
 
 func copyFile(src, dst string) error {
