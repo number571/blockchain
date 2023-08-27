@@ -1,5 +1,7 @@
 # Blockchain
 
+> Cryptocurrency from scratch. Supplemented by training manuals
+
 > More information about blockchain in the [youtube.com/watch?v=mp3I1HtEKfU](https://www.youtube.com/watch?v=mp3I1HtEKfU "Blockchain")
 
 
