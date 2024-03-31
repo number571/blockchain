@@ -1,9 +1,11 @@
 # Blockchain
 
 > Cryptocurrency from scratch. Supplemented by training manuals
-
+> 
 > More information about blockchain in the [youtube.com/watch?v=mp3I1HtEKfU](https://www.youtube.com/watch?v=mp3I1HtEKfU "Blockchain")
 
+> [!IMPORTANT]
+> The current implementation in the master branch is irrelevant for the modern version of the Go language. To compile programs successfully, use the [goup](https://github.com/number571/blockchain/tree/goup) branch.
 
 ### Compile:
 ```
